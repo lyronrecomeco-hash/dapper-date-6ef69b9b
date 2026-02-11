@@ -65,7 +65,7 @@ const Header = ({ user, onSignOut, onCategorySelect }: HeaderProps) => {
             </div>
           </div>
 
-          {user ? (
+          {user && (
             <button
               onClick={() => setMenuOpen(true)}
               className="flex items-center gap-2 px-2.5 min-[375px]:px-3 py-1.5 min-[375px]:py-2 rounded-xl text-xs text-muted-foreground transition-all"
@@ -77,14 +77,6 @@ const Header = ({ user, onSignOut, onCategorySelect }: HeaderProps) => {
                 className="w-6 h-6 rounded-full object-cover"
                 onError={(e) => { (e.target as HTMLImageElement).style.display = 'none'; }}
               />
-              <Menu className="w-4 h-4" />
-            </button>
-          ) : (
-            <button
-              onClick={() => setMenuOpen(true)}
-              className="p-2 rounded-xl text-muted-foreground"
-              style={{ background: 'hsl(0 0% 100% / 0.04)', border: '1px solid hsl(0 0% 100% / 0.06)' }}
-            >
               <Menu className="w-4 h-4" />
             </button>
           )}
