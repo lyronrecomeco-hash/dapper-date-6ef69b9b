@@ -1,8 +1,8 @@
 import { useState } from "react";
 import {
   Scissors, LogOut, Menu, X, Home, CalendarDays,
-  ScissorsIcon, Brush, Sparkles, Crown, Droplets,
-  MapPin, Phone, Clock, Star, ChevronRight,
+  ScissorsIcon, Brush, Sparkles, Crown,
+  ChevronRight,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { User } from "@supabase/supabase-js";
@@ -183,20 +183,6 @@ const Header = ({ user, onSignOut, onCategorySelect }: HeaderProps) => {
 
               {/* Info + Sign Out */}
               <div className="p-4 space-y-3" style={{ borderTop: '1px solid hsl(0 0% 100% / 0.06)' }}>
-                {/* Quick Info */}
-                <div className="space-y-2">
-                  {[
-                    { icon: MapPin, text: "Rua Exemplo, 123 — SP" },
-                    { icon: Phone, text: "(11) 99999-9999" },
-                    { icon: Clock, text: "Seg–Sáb · 9h–19h" },
-                  ].map((info) => (
-                    <div key={info.text} className="flex items-center gap-2 text-[11px] text-muted-foreground/60">
-                      <info.icon className="w-3 h-3 shrink-0" />
-                      <span>{info.text}</span>
-                    </div>
-                  ))}
-                </div>
-
                 {user && (
                   <button
                     onClick={() => { onSignOut?.(); setMenuOpen(false); }}
