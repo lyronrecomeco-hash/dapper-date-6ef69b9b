@@ -11,13 +11,7 @@ const Index = () => {
   const [selectedService, setSelectedService] = useState<Service | null>(null);
 
   return (
-    <div className="min-h-screen bg-background relative">
-      {/* Subtle background gradient */}
-      <div className="fixed inset-0 pointer-events-none">
-        <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[600px] h-[400px] bg-primary/5 rounded-full blur-[120px]" />
-        <div className="absolute bottom-0 right-0 w-[300px] h-[300px] bg-primary/3 rounded-full blur-[100px]" />
-      </div>
-
+    <div className="min-h-screen relative">
       <div className="relative z-10">
         <Header />
 
@@ -29,7 +23,7 @@ const Index = () => {
             transition={{ duration: 0.5 }}
             className="text-center mb-12"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-primary/10 border border-primary/20 text-primary text-xs font-semibold mb-5">
+            <div className="glass-chip inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-primary text-xs font-semibold mb-5">
               <Star className="w-3 h-3" /> Agendamento Online
             </div>
             <h2 className="text-3xl sm:text-5xl font-extrabold text-foreground leading-tight tracking-tight">
@@ -41,15 +35,16 @@ const Index = () => {
             </p>
           </motion.div>
 
-          {/* Services */}
+          {/* Services label */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ delay: 0.2 }}
+            className="mb-6"
           >
-            <div className="flex items-center gap-2 mb-6">
+            <div className="flex items-center gap-2">
               <Scissors className="w-4 h-4 text-primary" />
-              <h3 className="text-sm font-semibold text-muted-foreground uppercase tracking-widest">Serviços</h3>
+              <h3 className="text-xs font-semibold text-muted-foreground uppercase tracking-[0.2em]">Serviços</h3>
             </div>
           </motion.div>
 
