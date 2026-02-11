@@ -19,7 +19,7 @@ const ServiceCard = ({ service, onSelect, index }: ServiceCardProps) => {
     >
       <div className="flex items-stretch">
         {/* Image */}
-        <div className="w-28 sm:w-32 shrink-0 overflow-hidden rounded-l-2xl relative">
+        <div className="w-24 sm:w-32 shrink-0 overflow-hidden rounded-l-2xl relative">
           <img
             src={service.image}
             alt={service.title}
@@ -30,32 +30,29 @@ const ServiceCard = ({ service, onSelect, index }: ServiceCardProps) => {
         </div>
 
         {/* Content */}
-        <div className="flex-1 min-w-0 p-4 flex flex-col justify-between">
-          <div>
-            <h3 className="text-[15px] sm:text-lg font-bold text-foreground tracking-tight leading-snug">
+        <div className="flex-1 min-w-0 px-3 py-3 sm:p-4 flex flex-col justify-between gap-2">
+          <div className="min-w-0">
+            <h3 className="text-sm sm:text-lg font-bold text-foreground tracking-tight leading-snug truncate">
               {service.title}
             </h3>
-            <p className="text-xs sm:text-sm text-muted-foreground mt-0.5 leading-relaxed line-clamp-1">
+            <p className="text-[11px] sm:text-sm text-muted-foreground mt-0.5 leading-relaxed truncate">
               {service.subtitle}
             </p>
           </div>
 
-          <div className="flex items-center justify-between mt-3">
-            <div className="flex items-center gap-2.5">
-              <span className="gold-text text-lg font-bold leading-none">
-                R$ {service.price}
-              </span>
-              <span className="flex items-center gap-1 text-[11px] text-muted-foreground">
-                <Clock className="w-3 h-3" />
-                {service.duration}
-              </span>
-            </div>
-
+          <div className="flex items-center gap-2">
+            <span className="gold-text text-base sm:text-lg font-bold whitespace-nowrap">
+              R$ {service.price}
+            </span>
+            <span className="flex items-center gap-0.5 text-[10px] sm:text-xs text-muted-foreground whitespace-nowrap">
+              <Clock className="w-3 h-3" />
+              {service.duration}
+            </span>
             <button
-              className="flex items-center gap-1.5 px-3.5 py-2 text-xs whitespace-nowrap rounded-xl font-semibold transition-all duration-300"
+              className="ml-auto flex items-center gap-1 px-3 py-1.5 sm:px-4 sm:py-2 text-[11px] sm:text-xs whitespace-nowrap rounded-lg sm:rounded-xl font-semibold transition-all duration-300 shrink-0"
               style={{ background: 'hsl(0 0% 12%)', color: 'hsl(0 0% 65%)', border: '1px solid hsl(0 0% 18%)' }}
             >
-              Agendar Aqui <ArrowRight className="w-3 h-3" />
+              Agendar <ArrowRight className="w-3 h-3" />
             </button>
           </div>
         </div>
