@@ -76,7 +76,8 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 z-50 bg-background/80 backdrop-blur-md flex items-center justify-center p-4"
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: 'hsl(220 25% 6% / 0.85)', backdropFilter: 'blur(12px)' }}
     >
       <motion.div
         initial={{ scale: 0.95, opacity: 0 }}
@@ -85,9 +86,9 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
         className="glass-card-strong w-full max-w-lg max-h-[90vh] overflow-y-auto scrollbar-hide"
       >
         {/* Header */}
-        <div className="flex items-center justify-between p-5 border-b border-white/5">
+        <div className="flex items-center justify-between p-5" style={{ borderBottom: '1px solid hsl(0 0% 100% / 0.06)' }}>
           <h2 className="text-xl font-bold text-foreground">Agendamento</h2>
-          <button onClick={onClose} className="p-2 rounded-xl hover:bg-white/5 transition-colors">
+          <button onClick={onClose} className="p-2 rounded-xl transition-colors" style={{ background: 'hsl(0 0% 100% / 0.05)' }}>
             <X className="w-5 h-5 text-muted-foreground" />
           </button>
         </div>
@@ -101,7 +102,7 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
                   {i < currentStep ? <Check className="w-4 h-4" /> : i + 1}
                 </div>
                 {i < steps.length - 1 && (
-                  <div className={`hidden sm:block w-8 h-px mx-1 ${i < currentStep ? "bg-primary/50" : "bg-white/10"}`} />
+                  <div className="hidden sm:block w-8 h-px mx-1" style={{ background: i < currentStep ? 'hsl(43 74% 49% / 0.3)' : 'hsl(0 0% 100% / 0.06)' }} />
                 )}
               </div>
             ))}
@@ -115,20 +116,18 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
             <motion.div key={currentStep} variants={slideVariants} initial="enter" animate="center" exit="exit" transition={{ duration: 0.25 }}>
 
               {currentStep === 0 && (
-                <div className="space-y-3">
-                  <div className="glass-card p-4 border-primary/20 flex items-center gap-4 overflow-hidden">
-                    <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
-                      <img src={service.image} alt={service.title} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1">
-                      <h3 className="font-bold text-foreground">{service.title}</h3>
-                      <p className="text-sm text-muted-foreground">{service.subtitle}</p>
-                      <div className="flex items-center gap-4 mt-2 text-sm">
-                        <span className="gold-text font-bold text-lg">R$ {service.price}</span>
-                        <span className="flex items-center gap-1 text-muted-foreground">
-                          <Clock className="w-3 h-3" /> {service.duration}
-                        </span>
-                      </div>
+                <div className="glass-card p-4 flex items-center gap-4 overflow-hidden">
+                  <div className="w-16 h-16 rounded-xl overflow-hidden shrink-0">
+                    <img src={service.image} alt={service.title} className="w-full h-full object-cover" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-bold text-foreground">{service.title}</h3>
+                    <p className="text-sm text-muted-foreground">{service.subtitle}</p>
+                    <div className="flex items-center gap-4 mt-2 text-sm">
+                      <span className="gold-text font-bold text-lg">R$ {service.price}</span>
+                      <span className="flex items-center gap-1 text-muted-foreground">
+                        <Clock className="w-3 h-3" /> {service.duration}
+                      </span>
                     </div>
                   </div>
                 </div>
@@ -140,10 +139,20 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
                     <button
                       key={barber.id}
                       onClick={() => setSelectedBarber(barber)}
-                      className={`w-full glass-card p-4 text-left transition-all ${selectedBarber?.id === barber.id ? "border-primary/30 bg-primary/5" : "hover:bg-white/5"}`}
+                      className="w-full glass-card p-4 text-left transition-all"
+                      style={{
+                        borderColor: selectedBarber?.id === barber.id ? 'hsl(43 74% 49% / 0.3)' : undefined,
+                        background: selectedBarber?.id === barber.id ? 'hsl(43 74% 49% / 0.06)' : undefined,
+                      }}
                     >
                       <div className="flex items-center gap-3">
-                        <div className={`w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm ${selectedBarber?.id === barber.id ? "gold-gradient text-primary-foreground" : "bg-white/5 text-muted-foreground"}`}>
+                        <div
+                          className="w-11 h-11 rounded-xl flex items-center justify-center font-bold text-sm"
+                          style={{
+                            background: selectedBarber?.id === barber.id ? 'linear-gradient(135deg, hsl(43, 74%, 49%), hsl(43, 80%, 60%))' : 'hsl(0 0% 100% / 0.05)',
+                            color: selectedBarber?.id === barber.id ? 'hsl(220 25% 6%)' : 'hsl(220 10% 50%)',
+                          }}
+                        >
                           {barber.avatar}
                         </div>
                         <div className="flex-1">
@@ -168,11 +177,15 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
                         <button
                           key={d.value}
                           onClick={() => setSelectedDate(d.value)}
-                          className={`shrink-0 w-16 py-3 rounded-xl text-center transition-all ${
-                            selectedDate === d.value
-                              ? "gold-gradient text-primary-foreground shadow-lg shadow-primary/20"
-                              : "bg-white/5 text-muted-foreground hover:bg-white/10 border border-white/5"
-                          }`}
+                          className="shrink-0 w-16 py-3 rounded-xl text-center transition-all"
+                          style={{
+                            background: selectedDate === d.value
+                              ? 'linear-gradient(135deg, hsl(43, 74%, 49%), hsl(43, 80%, 60%))'
+                              : 'hsl(0 0% 100% / 0.04)',
+                            border: `1px solid ${selectedDate === d.value ? 'transparent' : 'hsl(0 0% 100% / 0.06)'}`,
+                            color: selectedDate === d.value ? 'hsl(220 25% 6%)' : 'hsl(220 10% 55%)',
+                            boxShadow: selectedDate === d.value ? '0 4px 20px hsl(43 74% 49% / 0.25)' : 'none',
+                          }}
                         >
                           <span className="block text-[10px] uppercase font-medium opacity-70">{d.weekday}</span>
                           <span className="block text-sm font-bold mt-0.5">{d.day}</span>
@@ -189,11 +202,15 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
                         <button
                           key={t}
                           onClick={() => setSelectedTime(t)}
-                          className={`py-2.5 rounded-xl text-sm font-medium transition-all ${
-                            selectedTime === t
-                              ? "gold-gradient text-primary-foreground shadow-lg shadow-primary/20"
-                              : "bg-white/5 text-muted-foreground hover:bg-white/10 border border-white/5"
-                          }`}
+                          className="py-2.5 rounded-xl text-sm font-medium transition-all"
+                          style={{
+                            background: selectedTime === t
+                              ? 'linear-gradient(135deg, hsl(43, 74%, 49%), hsl(43, 80%, 60%))'
+                              : 'hsl(0 0% 100% / 0.04)',
+                            border: `1px solid ${selectedTime === t ? 'transparent' : 'hsl(0 0% 100% / 0.06)'}`,
+                            color: selectedTime === t ? 'hsl(220 25% 6%)' : 'hsl(220 10% 55%)',
+                            boxShadow: selectedTime === t ? '0 4px 16px hsl(43 74% 49% / 0.2)' : 'none',
+                          }}
                         >
                           {t}
                         </button>
@@ -214,7 +231,7 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
                       value={name}
                       onChange={(e) => setName(e.target.value)}
                       placeholder="Digite seu nome"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      className="glass-input"
                     />
                   </div>
                   <div>
@@ -226,14 +243,14 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
                       placeholder="(11) 99999-9999"
-                      className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-foreground placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary/50 transition-all"
+                      className="glass-input"
                     />
                   </div>
                 </div>
               )}
 
               {currentStep === 4 && (
-                <div className="space-y-3">
+                <div className="space-y-1">
                   <h3 className="text-lg font-bold text-foreground mb-4">Resumo do Agendamento</h3>
                   {[
                     { label: "Serviço", value: service.title },
@@ -244,7 +261,7 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
                     { label: "WhatsApp", value: phone },
                     { label: "Valor", value: `R$ ${service.price}` },
                   ].map((item) => (
-                    <div key={item.label} className="flex justify-between py-2.5 border-b border-white/5">
+                    <div key={item.label} className="flex justify-between py-2.5" style={{ borderBottom: '1px solid hsl(0 0% 100% / 0.04)' }}>
                       <span className="text-sm text-muted-foreground">{item.label}</span>
                       <span className="text-sm font-semibold text-foreground">{item.value}</span>
                     </div>
@@ -257,7 +274,7 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
         </div>
 
         {/* Footer */}
-        <div className="p-5 border-t border-white/5 flex items-center justify-between">
+        <div className="p-5 flex items-center justify-between" style={{ borderTop: '1px solid hsl(0 0% 100% / 0.06)' }}>
           <button
             onClick={currentStep === 0 ? onClose : back}
             className="btn-secondary flex items-center gap-2"
@@ -277,7 +294,12 @@ const BookingFlow = ({ service, onClose }: BookingFlowProps) => {
           ) : (
             <button
               onClick={sendWhatsApp}
-              className="flex items-center gap-2 px-6 py-3 rounded-xl bg-whatsapp hover:bg-whatsapp/90 text-whatsapp-foreground text-sm font-semibold transition-all shadow-lg shadow-whatsapp/20"
+              className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all"
+              style={{
+                background: 'hsl(142 70% 40%)',
+                color: 'white',
+                boxShadow: '0 4px 20px hsl(142 70% 40% / 0.25)',
+              }}
             >
               <Send className="w-4 h-4" /> Enviar via WhatsApp
             </button>

@@ -19,12 +19,13 @@ const ServiceCard = ({ service, onSelect, index }: ServiceCardProps) => {
     >
       <div className="flex items-center gap-0">
         {/* Realistic image */}
-        <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 overflow-hidden rounded-l-2xl">
+        <div className="w-24 h-24 sm:w-28 sm:h-28 shrink-0 overflow-hidden rounded-l-2xl relative">
           <img
             src={service.image}
             alt={service.title}
             className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
           />
+          <div className="absolute inset-0 bg-gradient-to-r from-transparent to-background/40" />
         </div>
 
         {/* Content */}
