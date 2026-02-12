@@ -34,6 +34,17 @@ const Appointments = () => {
 
   useEffect(() => {
     fetchAppointments();
+
+    const channel = supabase
+      .channel('admin-appointments')
+      .on(
+        'postgres_changes',
+        { event: '*', schema: 'public', table: 'appointments' },
+        () => fetchAppointments()
+      )
+      .subscribe();
+
+    return () => { supabase.removeChannel(channel); };
   }, [selectedDate, currentMonth, filterMode]);
 
   const fetchAppointments = async () => {
