@@ -131,72 +131,110 @@ const DirectionsModal = ({ onClose }: DirectionsModalProps) => {
     } catch { return null; }
   }, []);
 
+  // ─── Remove old route layers helper ───
+  const removeRouteLayers = useCallback((map: maplibregl.Map) => {
+    const layers = ["route-glow", "route-outline", "route-casing", "route-line", "route-arrow", "route-dot"];
+    layers.forEach(id => { if (map.getLayer(id)) map.removeLayer(id); });
+    if (map.getSource("route")) map.removeSource("route");
+    if (map.getSource("route-dot")) map.removeSource("route-dot");
+  }, []);
+
   // ─── Animate Route Drawing ───
   const animateRoute = useCallback((map: maplibregl.Map, coordinates: [number, number][]) => {
     if (routeAnimRef.current) cancelAnimationFrame(routeAnimRef.current);
-
-    // Remove old route layers
-    if (map.getLayer("route-line")) map.removeLayer("route-line");
-    if (map.getLayer("route-outline")) map.removeLayer("route-outline");
-    if (map.getSource("route")) map.removeSource("route");
+    removeRouteLayers(map);
 
     map.addSource("route", {
       type: "geojson",
       data: { type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: [] } },
     });
 
-    // Route outline (dark shadow)
-    map.addLayer({
-      id: "route-outline", type: "line", source: "route",
-      paint: { "line-color": "hsl(245, 40%, 25%)", "line-width": 8, "line-opacity": 0.4, "line-blur": 3 },
+    // Animated dot source
+    map.addSource("route-dot", {
+      type: "geojson",
+      data: { type: "Feature", properties: {}, geometry: { type: "Point", coordinates: coordinates[0] } },
     });
 
-    // Main route line (accent gradient via opacity trick)
+    // 1) Outer glow
     map.addLayer({
-      id: "route-line", type: "line", source: "route",
-      paint: {
-        "line-color": "hsl(245, 65%, 60%)",
-        "line-width": 5,
-        "line-opacity": 0.9,
-        "line-dasharray": [0, 2, 1],
-      },
+      id: "route-glow", type: "line", source: "route",
+      paint: { "line-color": "hsl(250, 80%, 65%)", "line-width": 16, "line-opacity": 0.08, "line-blur": 12 },
       layout: { "line-cap": "round", "line-join": "round" },
     });
 
-    // Animate drawing the line
+    // 2) Casing (dark border)
+    map.addLayer({
+      id: "route-casing", type: "line", source: "route",
+      paint: { "line-color": "hsl(250, 30%, 12%)", "line-width": 8, "line-opacity": 0.7 },
+      layout: { "line-cap": "round", "line-join": "round" },
+    });
+
+    // 3) Main line
+    map.addLayer({
+      id: "route-line", type: "line", source: "route",
+      paint: { "line-color": "hsl(250, 75%, 60%)", "line-width": 5, "line-opacity": 0.95 },
+      layout: { "line-cap": "round", "line-join": "round" },
+    });
+
+    // 4) Arrow pattern (direction indicators)
+    map.addLayer({
+      id: "route-arrow", type: "symbol", source: "route",
+      layout: {
+        "symbol-placement": "line",
+        "symbol-spacing": 80,
+        "text-field": "▸",
+        "text-size": 16,
+        "text-rotation-alignment": "map",
+        "text-keep-upright": false,
+      },
+      paint: { "text-color": "hsl(250, 90%, 85%)", "text-opacity": 0.7 },
+    });
+
+    // 5) Leading dot (animated)
+    map.addLayer({
+      id: "route-dot", type: "circle", source: "route-dot",
+      paint: {
+        "circle-radius": 6,
+        "circle-color": "hsl(250, 90%, 75%)",
+        "circle-opacity": 1,
+        "circle-stroke-width": 2.5,
+        "circle-stroke-color": "white",
+        "circle-blur": 0.1,
+      },
+    });
+
+    // Animate: draw polyline progressively with leading dot
     const totalPoints = coordinates.length;
-    const duration = 1800;
+    const duration = 2200;
     let startTime: number | null = null;
 
     const draw = (time: number) => {
       if (!startTime) startTime = time;
-      const elapsed = time - startTime;
-      const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
+      const progress = Math.min((time - startTime) / duration, 1);
       const eased = 1 - Math.pow(1 - progress, 3);
       const pointCount = Math.max(2, Math.floor(eased * totalPoints));
+      const slice = coordinates.slice(0, pointCount);
 
-      const source = map.getSource("route") as maplibregl.GeoJSONSource;
-      if (source) {
-        source.setData({
-          type: "Feature", properties: {},
-          geometry: { type: "LineString", coordinates: coordinates.slice(0, pointCount) },
-        });
+      const routeSrc = map.getSource("route") as maplibregl.GeoJSONSource;
+      const dotSrc = map.getSource("route-dot") as maplibregl.GeoJSONSource;
+      if (routeSrc) {
+        routeSrc.setData({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: slice } });
+      }
+      if (dotSrc) {
+        dotSrc.setData({ type: "Feature", properties: {}, geometry: { type: "Point", coordinates: slice[slice.length - 1] } });
       }
 
       if (progress < 1) {
         routeAnimRef.current = requestAnimationFrame(draw);
       } else {
         routeAnimRef.current = null;
-        // After drawing, switch to solid line
-        if (map.getLayer("route-line")) {
-          map.setPaintProperty("route-line", "line-dasharray", undefined as any);
-        }
+        // Hide leading dot after animation completes
+        if (map.getLayer("route-dot")) map.setPaintProperty("route-dot", "circle-opacity", 0);
       }
     };
 
     routeAnimRef.current = requestAnimationFrame(draw);
-  }, []);
+  }, [removeRouteLayers]);
 
   // ─── Start Route Tracking ───
   const startRouteTracking = useCallback(() => {
@@ -255,16 +293,17 @@ const DirectionsModal = ({ onClose }: DirectionsModalProps) => {
         setUserPos({ lat: uLat, lng: uLng });
         if (userMarkerRef.current) userMarkerRef.current.setLngLat([uLng, uLat]);
 
-        // Re-fetch route silently
+        // Re-fetch route silently & update polyline
         fetchRoute(uLng, uLat, destLng, destLat).then(route => {
           if (route) {
             setRouteInfo({ distance: route.distance, duration: route.duration });
-            const source = map.getSource("route") as maplibregl.GeoJSONSource;
-            if (source) {
-              source.setData({
-                type: "Feature", properties: {},
-                geometry: route.geometry,
-              });
+            const coords = route.geometry.coordinates as [number, number][];
+            const routeSrc = map.getSource("route") as maplibregl.GeoJSONSource;
+            if (routeSrc) {
+              routeSrc.setData({ type: "Feature", properties: {}, geometry: { type: "LineString", coordinates: coords } });
+            } else {
+              // Source was cleared (e.g. style switch), re-animate
+              animateRoute(map, coords);
             }
           }
         });
