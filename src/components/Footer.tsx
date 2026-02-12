@@ -1,4 +1,4 @@
-import { Scissors, MapPin, Phone, Clock } from "lucide-react";
+import { Scissors, Phone, Clock } from "lucide-react";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
 
 const Footer = () => {
