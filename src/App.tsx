@@ -9,8 +9,10 @@ import AdminLogin from "./pages/AdminLogin";
 import AdminLayout from "./components/admin/AdminLayout";
 import Dashboard from "./pages/admin/Dashboard";
 import Services from "./pages/admin/Services";
+import Barbers from "./pages/admin/Barbers";
 import Appointments from "./pages/admin/Appointments";
 import Coupons from "./pages/admin/Coupons";
+import Settings from "./pages/admin/Settings";
 
 const queryClient = new QueryClient();
 
@@ -26,8 +28,10 @@ const App = () => (
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
             <Route path="services" element={<Services />} />
+            <Route path="barbers" element={<Barbers />} />
             <Route path="appointments" element={<Appointments />} />
             <Route path="coupons" element={<Coupons />} />
+            <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
         </Routes>

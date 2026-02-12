@@ -70,6 +70,63 @@ export type Database = {
           },
         ]
       }
+      barbers: {
+        Row: {
+          active: boolean
+          avatar_url: string | null
+          created_at: string
+          id: string
+          name: string
+          sort_order: number
+          specialty: string | null
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          name: string
+          sort_order?: number
+          specialty?: string | null
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          avatar_url?: string | null
+          created_at?: string
+          id?: string
+          name?: string
+          sort_order?: number
+          specialty?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      business_settings: {
+        Row: {
+          created_at: string
+          id: string
+          key: string
+          updated_at: string
+          value: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          key: string
+          updated_at?: string
+          value?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          key?: string
+          updated_at?: string
+          value?: string | null
+        }
+        Relationships: []
+      }
       coupons: {
         Row: {
           active: boolean | null
