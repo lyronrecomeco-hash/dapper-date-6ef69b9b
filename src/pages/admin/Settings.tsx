@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { motion, AnimatePresence } from "framer-motion";
-import { Save, Store, Phone, Clock, MapPin, CalendarOff, Map } from "lucide-react";
+import { Save, Store, Phone, Clock, MapPin, CalendarOff, Map, ShoppingBag } from "lucide-react";
 import { toast } from "sonner";
 import LocationPickerModal from "@/components/LocationPickerModal";
 
@@ -150,6 +150,26 @@ const Settings = () => {
             <p className="text-[10px] text-muted-foreground">Clique nos dias em que a barbearia não funciona</p>
           </motion.div>
         </div>
+
+        {/* Store Toggle */}
+        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.25 }}
+          className="glass-card p-5 lg:col-span-2">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <ShoppingBag className="w-4 h-4" style={{ color: 'hsl(245 60% 65%)' }} />
+              <div>
+                <h3 className="text-sm font-semibold text-foreground">Loja / Marketplace</h3>
+                <p className="text-[11px] text-muted-foreground">Ativar seção de produtos para venda</p>
+              </div>
+            </div>
+            <button
+              onClick={() => updateSetting("store_enabled", settings.store_enabled === "true" ? "false" : "true")}
+              className="w-12 h-7 rounded-full transition-all duration-200 relative"
+              style={{ background: settings.store_enabled === "true" ? 'hsl(245 60% 55%)' : 'hsl(0 0% 100% / 0.1)' }}>
+              <div className="absolute top-1.5 w-4 h-4 rounded-full bg-white transition-all duration-200" style={{ left: settings.store_enabled === "true" ? '28px' : '4px' }} />
+            </button>
+          </div>
+        </motion.div>
       </div>
 
       <motion.button

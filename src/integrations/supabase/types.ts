@@ -163,6 +163,84 @@ export type Database = {
         }
         Relationships: []
       }
+      prize_wheel_slices: {
+        Row: {
+          active: boolean
+          created_at: string
+          custom_prize: string | null
+          discount_percent: number | null
+          discount_value: number | null
+          icon: string
+          id: string
+          label: string
+          probability: number
+          sort_order: number
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          custom_prize?: string | null
+          discount_percent?: number | null
+          discount_value?: number | null
+          icon?: string
+          id?: string
+          label: string
+          probability?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          custom_prize?: string | null
+          discount_percent?: number | null
+          discount_value?: number | null
+          icon?: string
+          id?: string
+          label?: string
+          probability?: number
+          sort_order?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          active: boolean
+          created_at: string
+          description: string | null
+          id: string
+          image_url: string | null
+          price: number
+          sort_order: number
+          title: string
+          updated_at: string
+        }
+        Insert: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          price: number
+          sort_order?: number
+          title: string
+          updated_at?: string
+        }
+        Update: {
+          active?: boolean
+          created_at?: string
+          description?: string | null
+          id?: string
+          image_url?: string | null
+          price?: number
+          sort_order?: number
+          title?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
       services: {
         Row: {
           active: boolean | null

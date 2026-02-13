@@ -13,6 +13,8 @@ import Barbers from "./pages/admin/Barbers";
 import Appointments from "./pages/admin/Appointments";
 import Coupons from "./pages/admin/Coupons";
 import Settings from "./pages/admin/Settings";
+import Products from "./pages/admin/Products";
+import PrizeWheelConfig from "./pages/admin/PrizeWheelConfig";
 import Navigation from "./pages/Navigation";
 
 const queryClient = new QueryClient();
@@ -33,6 +35,8 @@ const App = () => (
             <Route path="barbers" element={<Barbers />} />
             <Route path="appointments" element={<Appointments />} />
             <Route path="coupons" element={<Coupons />} />
+            <Route path="products" element={<Products />} />
+            <Route path="prize-wheel" element={<PrizeWheelConfig />} />
             <Route path="settings" element={<Settings />} />
           </Route>
           <Route path="*" element={<NotFound />} />
