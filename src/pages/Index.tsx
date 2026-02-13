@@ -137,7 +137,7 @@ const Index = () => {
   return (
     <div className="min-h-screen min-h-[100dvh] relative">
       <div className="relative z-10">
-        <Header user={user} onSignOut={signOut} onCategorySelect={setActiveCategory} onDirections={() => setShowDirections(true)} />
+        <Header user={user} onSignOut={signOut} onCategorySelect={setActiveCategory} onDirections={() => setShowDirections(true)} onOpenWheel={() => setShowWheel(true)} />
 
         <main className="container mx-auto px-3 min-[375px]:px-4 py-6 min-[375px]:py-8 max-w-2xl">
           {/* Greeting */}
@@ -253,23 +253,6 @@ const Index = () => {
             </>
           )}
 
-          {/* Prize Wheel Button */}
-          {wheelEnabled && (
-            <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.3 }} className="mt-8">
-              <button
-                onClick={() => setShowWheel(true)}
-                className="w-full py-4 rounded-2xl font-bold text-sm flex items-center justify-center gap-3 transition-all active:scale-[0.98] uppercase tracking-wider"
-                style={{
-                  background: "linear-gradient(135deg, hsl(245 60% 50%), hsl(280 55% 50%))",
-                  color: "white",
-                  boxShadow: "0 8px 32px hsl(245 60% 55% / 0.3)",
-                }}
-              >
-                <Gift className="w-5 h-5" />
-                🎰 Girar Roleta Premiada
-              </button>
-            </motion.div>
-          )}
         </main>
 
         <Footer />

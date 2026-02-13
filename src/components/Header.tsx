@@ -1,18 +1,20 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Scissors, LogOut, Menu, X, Home, CalendarDays,
   ScissorsIcon, Brush, Sparkles, Crown,
-  ChevronRight, MapPin,
+  ChevronRight, MapPin, Gift,
 } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import type { User } from "@supabase/supabase-js";
 import { useBusinessSettings } from "@/hooks/useBusinessSettings";
+import { supabase } from "@/integrations/supabase/client";
 
 interface HeaderProps {
   user?: User | null;
   onSignOut?: () => void;
   onCategorySelect?: (category: string) => void;
   onDirections?: () => void;
+  onOpenWheel?: () => void;
 }
 
 const menuSections = [
@@ -35,16 +37,27 @@ const menuSections = [
   },
 ];
 
-const Header = ({ user, onSignOut, onCategorySelect, onDirections }: HeaderProps) => {
+const Header = ({ user, onSignOut, onCategorySelect, onDirections, onOpenWheel }: HeaderProps) => {
   const [menuOpen, setMenuOpen] = useState(false);
   const { settings } = useBusinessSettings();
   const businessName = settings.business_name || "Barbearia";
+  const [wheelEnabled, setWheelEnabled] = useState(false);
+
+  useEffect(() => {
+    const check = async () => {
+      const { data } = await supabase.from("business_settings").select("value").eq("key", "prize_wheel_enabled").maybeSingle();
+      setWheelEnabled(data?.value === "true");
+    };
+    check();
+  }, []);
 
   const handleMenuClick = (id: string) => {
     if (id === "inicio") {
       onCategorySelect?.("all");
     } else if (id === "directions") {
       onDirections?.();
+    } else if (id === "roleta") {
+      onOpenWheel?.();
     } else if (["cabelo", "barba", "combo", "extras"].includes(id)) {
       onCategorySelect?.(id);
     }
@@ -52,6 +65,20 @@ const Header = ({ user, onSignOut, onCategorySelect, onDirections }: HeaderProps
   };
 
   const firstName = user?.user_metadata?.full_name?.split(" ")[0] || "Usuário";
+
+  // Build dynamic menu sections
+  const dynamicMenuSections = menuSections.map((section) => {
+    if (section.label === "Menu" && wheelEnabled) {
+      return {
+        ...section,
+        items: [
+          ...section.items,
+          { id: "roleta", label: "Roleta Premiada", icon: Gift },
+        ],
+      };
+    }
+    return section;
+  });
 
   return (
     <>
@@ -148,7 +175,7 @@ const Header = ({ user, onSignOut, onCategorySelect, onDirections }: HeaderProps
 
               {/* Menu Sections */}
               <nav className="flex-1 p-3 space-y-4">
-                {menuSections.map((section) => (
+                {dynamicMenuSections.map((section) => (
                   <div key={section.label}>
                     <p className="px-3 mb-1.5 text-[10px] uppercase tracking-widest text-muted-foreground/60 font-medium">
                       {section.label}
@@ -167,7 +194,7 @@ const Header = ({ user, onSignOut, onCategorySelect, onDirections }: HeaderProps
                         >
                           <div
                             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                            style={{ background: 'hsl(245 60% 55% / 0.1)' }}
+                            style={{ background: item.id === "roleta" ? 'hsl(280 55% 50% / 0.15)' : 'hsl(245 60% 55% / 0.1)' }}
                           >
                             <item.icon className="w-4 h-4 text-accent" />
                           </div>

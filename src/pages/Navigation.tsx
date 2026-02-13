@@ -112,6 +112,8 @@ const Navigation = () => {
   const targetCameraRef = useRef<{ lat: number; lng: number; bearing: number; zoom: number; pitch: number } | null>(null);
   const currentCameraRef = useRef<{ lat: number; lng: number; bearing: number } | null>(null);
   const offRouteCountRef = useRef(0);
+  const userInteractingRef = useRef(false);
+  const recenterTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const [transportMode, setTransportMode] = useState<TransportMode | null>(null);
   const [osrmProfile, setOsrmProfile] = useState("driving");
@@ -347,7 +349,7 @@ const Navigation = () => {
     const animate = () => {
       const map = mapInstance.current;
       const target = targetCameraRef.current;
-      if (!map || !target) {
+      if (!map || !target || userInteractingRef.current) {
         smoothAnimRef.current = requestAnimationFrame(animate);
         return;
       }
@@ -405,9 +407,28 @@ const Navigation = () => {
     });
 
     map.on("style.load", () => {
-      if (viewMode === "3d") add3DBuildings(map);
+      if (viewModeRef.current === "3d") add3DBuildings(map);
       redrawRouteOnStyle(map);
     });
+
+    // Detect user interaction to pause smooth camera
+    const onInteractionStart = () => {
+      userInteractingRef.current = true;
+      if (recenterTimeoutRef.current) clearTimeout(recenterTimeoutRef.current);
+    };
+    const onInteractionEnd = () => {
+      // Auto-resume smooth camera after 5s of no interaction
+      recenterTimeoutRef.current = setTimeout(() => {
+        userInteractingRef.current = false;
+      }, 5000);
+    };
+
+    map.on("dragstart", onInteractionStart);
+    map.on("zoomstart", onInteractionStart);
+    map.on("pitchstart", onInteractionStart);
+    map.on("dragend", onInteractionEnd);
+    map.on("zoomend", onInteractionEnd);
+    map.on("pitchend", onInteractionEnd);
 
     return () => {
       stopSmoothCamera();
@@ -594,6 +615,8 @@ const Navigation = () => {
   }, [mapReady, transportMode, osrmProfile, status, startNavigation]);
 
   const handleRecenter = () => {
+    userInteractingRef.current = false;
+    if (recenterTimeoutRef.current) clearTimeout(recenterTimeoutRef.current);
     const map = mapInstance.current;
     const pos = lastPositionRef.current;
     if (!map || !pos || !transportMode) return;
