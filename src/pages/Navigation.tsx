@@ -353,6 +353,9 @@ const Navigation = () => {
       }
       rotateArrow(bearing);
 
+      // Set active immediately on first position fix
+      setStatus("active");
+
       // Adaptive camera
       const cam = getAdaptiveCamera(mode, speed);
       const bearingRad = (bearing * Math.PI) / 180;
@@ -394,25 +397,42 @@ const Navigation = () => {
       if (route) {
         setRouteInfo({ distance: route.distance, duration: route.duration, eta: route.eta });
         setCurrentStreet(route.street);
-        setStatus("active");
         drawRoute(map, route.geometry.coordinates as [number, number][]);
         findCurrentStep(lat, lng, route.steps);
       }
     };
 
+    // Try high accuracy first, fallback to low accuracy
+    const geoOptions = { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 };
+    const fallbackOptions = { enableHighAccuracy: false, timeout: 10000, maximumAge: 30000 };
+
+    const onError = (err: GeolocationPositionError) => {
+      // On timeout with high accuracy, retry with low accuracy
+      if (err.code === 3) {
+        navigator.geolocation.getCurrentPosition(
+          (pos) => processPosition(pos),
+          (err2) => {
+            setStatus("error");
+            setErrorMsg(err2.code === 1 ? "Permissão de localização negada" : "Erro ao obter localização");
+          },
+          fallbackOptions
+        );
+        return;
+      }
+      setStatus("error");
+      setErrorMsg(err.code === 1 ? "Permissão de localização negada" : "Erro ao obter localização");
+    };
+
     navigator.geolocation.getCurrentPosition(
       (pos) => processPosition(pos),
-      (err) => {
-        setStatus("error");
-        setErrorMsg(err.code === 1 ? "Permissão de localização negada" : "Erro ao obter localização");
-      },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      onError,
+      geoOptions
     );
 
     watchIdRef.current = navigator.geolocation.watchPosition(
       (pos) => processPosition(pos),
       () => {},
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 2000 }
+      { enableHighAccuracy: true, timeout: 20000, maximumAge: 3000 }
     );
   }, [destLat, destLng, fetchRoute, drawRoute, createUserMarker, rotateArrow, calcBearing, getAdaptiveCamera, findCurrentStep]);
 
