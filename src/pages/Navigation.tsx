@@ -12,7 +12,23 @@ const MAP_STYLE = "https://basemaps.cartocdn.com/gl/dark-matter-gl-style/style.j
 type ViewMode = "3d" | "2d";
 
 // ── 3D Buildings Layer ──
+const findBuildingSource = (map: maplibregl.Map): string | null => {
+  const style = map.getStyle();
+  if (!style?.sources) return null;
+  // Try common source names
+  for (const name of ["openmaptiles", "carto", "composite", "mapbox"]) {
+    if (style.sources[name]) return name;
+  }
+  // Fallback: first vector source
+  for (const [name, src] of Object.entries(style.sources)) {
+    if ((src as any).type === "vector") return name;
+  }
+  return null;
+};
+
 const add3DBuildings = (map: maplibregl.Map) => {
+  if (map.getLayer("3d-buildings")) return;
+
   const layers = map.getStyle().layers;
   if (!layers) return;
 
@@ -24,40 +40,41 @@ const add3DBuildings = (map: maplibregl.Map) => {
     }
   }
 
-  if (map.getSource("openmaptiles") && !map.getLayer("3d-buildings")) {
-    map.addLayer(
-      {
-        id: "3d-buildings",
-        source: "openmaptiles",
-        "source-layer": "building",
-        type: "fill-extrusion",
-        minzoom: 14,
-        paint: {
-          "fill-extrusion-color": [
-            "interpolate", ["linear"], ["get", "render_height"],
-            0, "hsl(230, 22%, 18%)",
-            20, "hsl(230, 18%, 24%)",
-            50, "hsl(230, 14%, 30%)",
-            100, "hsl(225, 12%, 35%)",
-            200, "hsl(220, 10%, 40%)",
-          ],
-          "fill-extrusion-height": [
-            "interpolate", ["linear"], ["zoom"],
-            14, 0,
-            15.5, ["get", "render_height"],
-          ],
-          "fill-extrusion-base": [
-            "interpolate", ["linear"], ["zoom"],
-            14, 0,
-            15.5, ["get", "render_min_height"],
-          ],
-          "fill-extrusion-opacity": 0.88,
-          "fill-extrusion-vertical-gradient": true,
-        },
+  const source = findBuildingSource(map);
+  if (!source) return;
+
+  map.addLayer(
+    {
+      id: "3d-buildings",
+      source,
+      "source-layer": "building",
+      type: "fill-extrusion",
+      minzoom: 14,
+      paint: {
+        "fill-extrusion-color": [
+          "interpolate", ["linear"], ["get", "render_height"],
+          0, "hsl(230, 22%, 18%)",
+          20, "hsl(230, 18%, 24%)",
+          50, "hsl(230, 14%, 30%)",
+          100, "hsl(225, 12%, 35%)",
+          200, "hsl(220, 10%, 40%)",
+        ],
+        "fill-extrusion-height": [
+          "interpolate", ["linear"], ["zoom"],
+          14, 0,
+          15.5, ["get", "render_height"],
+        ],
+        "fill-extrusion-base": [
+          "interpolate", ["linear"], ["zoom"],
+          14, 0,
+          15.5, ["get", "render_min_height"],
+        ],
+        "fill-extrusion-opacity": 0.88,
+        "fill-extrusion-vertical-gradient": true,
       },
-      labelLayerId
-    );
-  }
+    },
+    labelLayerId
+  );
 };
 
 const remove3DBuildings = (map: maplibregl.Map) => {

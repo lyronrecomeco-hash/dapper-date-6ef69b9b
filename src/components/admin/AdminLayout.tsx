@@ -13,14 +13,18 @@ import {
   ChevronRight,
   Users,
   Settings,
+  ShoppingBag,
+  Gift,
 } from "lucide-react";
 
 const navItems = [
   { label: "Dashboard", path: "/admin", icon: LayoutDashboard },
   { label: "Serviços", path: "/admin/services", icon: Scissors },
+  { label: "Produtos", path: "/admin/products", icon: ShoppingBag },
   { label: "Barbeiros", path: "/admin/barbers", icon: Users },
   { label: "Agendamentos", path: "/admin/appointments", icon: CalendarDays },
   { label: "Cupons", path: "/admin/coupons", icon: Tag },
+  { label: "Roleta", path: "/admin/prize-wheel", icon: Gift },
   { label: "Configurações", path: "/admin/settings", icon: Settings },
 ];
 
