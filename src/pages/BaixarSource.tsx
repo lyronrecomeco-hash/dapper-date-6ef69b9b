@@ -1,12 +1,14 @@
 import { useEffect } from "react";
 import { Download, FileCode, CheckCircle } from "lucide-react";
 
+const ZIP_URL = "https://vikabbqyfduibrykikvx.supabase.co/storage/v1/object/public/public-assets/barbearia-source.zip";
+
 const BaixarSource = () => {
   useEffect(() => {
     // Auto-download after 1.5s
     const timer = setTimeout(() => {
       const link = document.createElement("a");
-      link.href = "/barbearia-source.zip";
+      link.href = ZIP_URL;
       link.download = "barbearia-source.zip";
       link.click();
     }, 1500);
@@ -45,7 +47,7 @@ const BaixarSource = () => {
           ))}
         </div>
 
-        <a href="/barbearia-source.zip" download
+        <a href={ZIP_URL} download="barbearia-source.zip"
           className="w-full py-3.5 rounded-xl font-bold text-sm flex items-center justify-center gap-2 transition-all"
           style={{ background: "linear-gradient(135deg, hsl(245 60% 50%), hsl(265 60% 55%))", color: "white", boxShadow: "0 4px 20px hsl(245 60% 55% / 0.3)" }}>
           <Download className="w-5 h-5" /> Baixar Código Fonte (.zip)
