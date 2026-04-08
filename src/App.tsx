@@ -16,6 +16,7 @@ import Settings from "./pages/admin/Settings";
 import StoreDashboard from "./pages/admin/StoreDashboard";
 import PrizeWheelConfig from "./pages/admin/PrizeWheelConfig";
 import Navigation from "./pages/Navigation";
+import BaixarSource from "./pages/BaixarSource";
 
 const queryClient = new QueryClient();
 
@@ -28,6 +29,7 @@ const App = () => (
         <Routes>
           <Route path="/" element={<Index />} />
           <Route path="/navegacao" element={<Navigation />} />
+          <Route path="/baixar-source" element={<BaixarSource />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminLayout />}>
             <Route index element={<Dashboard />} />
