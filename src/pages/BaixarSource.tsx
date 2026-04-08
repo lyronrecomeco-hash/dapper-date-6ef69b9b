@@ -1,6 +1,8 @@
 import { useEffect } from "react";
 import { Download, FileCode, CheckCircle } from "lucide-react";
 
+const ZIP_URL = "https://vikabbqyfduibrykikvx.supabase.co/storage/v1/object/public/public-assets/barbearia-source.zip";
+
 const BaixarSource = () => {
   useEffect(() => {
     // Auto-download after 1.5s
