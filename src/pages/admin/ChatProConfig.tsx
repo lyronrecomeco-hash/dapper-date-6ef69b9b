@@ -146,14 +146,20 @@ const ChatProConfig = () => {
     }
 
     const d = data.data;
-    if (d?.base64 || d?.qrcode || d?.data) {
-      const qr = d.base64 || d.qrcode || d.data;
-      setQrCodeBase64(qr);
-      setStatus("waiting_qr");
-      toast.success("QR Code gerado! Escaneie com o WhatsApp");
-    } else if (d?.connected || d?.status === "CONNECTED") {
+    if (d?.base64 || d?.qrcode || d?.qr) {
+      const qr = d.base64 || d.qrcode || d.qr;
+      if (qr) {
+        setQrCodeBase64(qr);
+        setStatus("waiting_qr");
+        toast.success("QR Code gerado! Escaneie com o WhatsApp");
+      } else {
+        // qr is empty string — already connected
+        setStatus("connected");
+        toast.success("Instância já está conectada! ✅");
+      }
+    } else if (d?.connected || d?.status === "CONNECTED" || d?.error === "is_loged" || (d?.status === true && d?.error === "is_loged")) {
       setStatus("connected");
-      toast.success("Já está conectado!");
+      toast.success("Instância já está conectada! ✅");
     } else {
       toast.error("Não foi possível gerar o QR Code");
     }
