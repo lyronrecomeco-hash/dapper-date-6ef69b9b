@@ -6,32 +6,80 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
 };
 
+function jsonResponse(body: object, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { ...corsHeaders, "Content-Type": "application/json" },
+  });
+}
+
 Deno.serve(async (req) => {
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
 
   try {
-    // Verify admin
-    const authHeader = req.headers.get("Authorization");
     const supabaseUrl = Deno.env.get("SUPABASE_URL")!;
     const supabaseKey = Deno.env.get("SUPABASE_ANON_KEY")!;
     const serviceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
+    const serviceClient = createClient(supabaseUrl, serviceKey);
 
+    const body = await req.json();
+    const { action, config, phone, message } = body;
+
+    // === PUBLIC ACTION: send_message (no admin auth needed) ===
+    if (action === "send_message") {
+      if (!phone || !message) {
+        return jsonResponse({ error: "Telefone e mensagem são obrigatórios" }, 400);
+      }
+
+      const { data: cfgRows } = await serviceClient
+        .from("chatpro_config")
+        .select("*")
+        .limit(1);
+
+      const cfg = cfgRows?.[0];
+      if (!cfg || !cfg.instance_id || !cfg.token || !cfg.endpoint) {
+        // Fallback: ChatPro not configured, skip silently
+        return jsonResponse({ success: false, reason: "chatpro_not_configured" });
+      }
+
+      const baseUrl = `${cfg.endpoint}/${cfg.instance_id}/api/v1`;
+      const chatproHeaders = {
+        "Accept": "application/json",
+        "Content-Type": "application/json",
+        "Authorization": cfg.token,
+      };
+
+      try {
+        const res = await fetch(`${baseUrl}/send_message`, {
+          method: "POST",
+          headers: chatproHeaders,
+          body: JSON.stringify({
+            number: phone.replace(/\D/g, ""),
+            message: message,
+          }),
+        });
+        const data = await res.json();
+        console.log("ChatPro send_message response:", JSON.stringify(data));
+        return jsonResponse({ success: true, data });
+      } catch (err) {
+        console.error("ChatPro send_message error:", err);
+        return jsonResponse({ success: false, reason: "send_failed" });
+      }
+    }
+
+    // === ADMIN ACTIONS: require authentication ===
+    const authHeader = req.headers.get("Authorization");
     const supabaseClient = createClient(supabaseUrl, supabaseKey, {
       global: { headers: { Authorization: authHeader || "" } },
     });
 
     const { data: { user }, error: userError } = await supabaseClient.auth.getUser();
     if (userError || !user) {
-      return new Response(JSON.stringify({ error: "Não autenticado" }), {
-        status: 401,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Não autenticado" }, 401);
     }
 
-    // Check admin role
-    const serviceClient = createClient(supabaseUrl, serviceKey);
     const { data: roles } = await serviceClient
       .from("user_roles")
       .select("role")
@@ -39,26 +87,16 @@ Deno.serve(async (req) => {
       .eq("role", "admin");
 
     if (!roles || roles.length === 0) {
-      return new Response(JSON.stringify({ error: "Acesso negado" }), {
-        status: 403,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ error: "Acesso negado" }, 403);
     }
 
-    const body = await req.json();
-    const { action, config } = body;
-
-    // Actions that don't need ChatPro config
+    // Save config
     if (action === "save_config") {
       const { instance_id, token, endpoint } = config || {};
       if (!instance_id || !token || !endpoint) {
-        return new Response(JSON.stringify({ error: "Campos obrigatórios não preenchidos" }), {
-          status: 400,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return jsonResponse({ error: "Campos obrigatórios não preenchidos" }, 400);
       }
 
-      // Upsert - delete all then insert (single config row)
       await serviceClient.from("chatpro_config").delete().neq("id", "00000000-0000-0000-0000-000000000000");
       const { error: insertErr } = await serviceClient.from("chatpro_config").insert({
         instance_id: instance_id.trim(),
@@ -67,27 +105,24 @@ Deno.serve(async (req) => {
       });
 
       if (insertErr) {
-        return new Response(JSON.stringify({ error: "Erro ao salvar: " + insertErr.message }), {
-          status: 500,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        return jsonResponse({ error: "Erro ao salvar: " + insertErr.message }, 500);
       }
-
-      return new Response(JSON.stringify({ success: true }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ success: true });
     }
 
+    // Get config (without exposing token)
     if (action === "get_config") {
       const { data: cfgRows } = await serviceClient
         .from("chatpro_config")
-        .select("instance_id, endpoint, created_at, updated_at")
+        .select("instance_id, endpoint, token, created_at, updated_at")
         .limit(1);
 
       const cfg = cfgRows?.[0] || null;
-      return new Response(JSON.stringify({ config: cfg }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      if (cfg) {
+        // Return masked token so frontend knows it's set
+        cfg.token = cfg.token ? "••••••••" + cfg.token.slice(-4) : "";
+      }
+      return jsonResponse({ config: cfg });
     }
 
     // For all other actions, load config
@@ -97,11 +132,8 @@ Deno.serve(async (req) => {
       .limit(1);
 
     const cfg = cfgRows?.[0];
-    if (!cfg || !cfg.instance_id || !cfg.token) {
-      return new Response(JSON.stringify({ error: "ChatPro não configurado" }), {
-        status: 400,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+    if (!cfg || !cfg.instance_id || !cfg.token || !cfg.endpoint) {
+      return jsonResponse({ error: "ChatPro não configurado. Salve a configuração primeiro." }, 400);
     }
 
     const baseUrl = `${cfg.endpoint}/${cfg.instance_id}/api/v1`;
@@ -114,50 +146,30 @@ Deno.serve(async (req) => {
     if (action === "test_connection" || action === "status") {
       const res = await fetch(`${baseUrl}/status`, { headers: chatproHeaders });
       const data = await res.json();
-      return new Response(JSON.stringify({ status: res.status, data }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ status: res.status, data });
     }
 
     if (action === "generate_qrcode") {
       const res = await fetch(`${baseUrl}/generate_qrcode`, { headers: chatproHeaders });
       const data = await res.json();
-      return new Response(JSON.stringify({ status: res.status, data }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ status: res.status, data });
     }
 
     if (action === "reload") {
-      const res = await fetch(`${baseUrl}/reload`, {
-        method: "GET",
-        headers: chatproHeaders,
-      });
+      const res = await fetch(`${baseUrl}/reload`, { method: "GET", headers: chatproHeaders });
       const data = await res.json();
-      return new Response(JSON.stringify({ status: res.status, data }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ status: res.status, data });
     }
 
     if (action === "remove_session") {
-      const res = await fetch(`${baseUrl}/remove_session`, {
-        method: "GET",
-        headers: chatproHeaders,
-      });
+      const res = await fetch(`${baseUrl}/remove_session`, { method: "GET", headers: chatproHeaders });
       const data = await res.json();
-      return new Response(JSON.stringify({ status: res.status, data }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
+      return jsonResponse({ status: res.status, data });
     }
 
-    return new Response(JSON.stringify({ error: "Ação inválida" }), {
-      status: 400,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: "Ação inválida" }, 400);
   } catch (err) {
     console.error("ChatPro edge function error:", err);
-    return new Response(JSON.stringify({ error: "Erro interno do servidor" }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    return jsonResponse({ error: "Erro interno do servidor" }, 500);
   }
 });
