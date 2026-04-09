@@ -64,7 +64,11 @@ const DemoSite = () => {
   const goToBooking = () => navigate("/");
 
   return (
-    <div className="min-h-screen bg-black text-white font-sans overflow-x-hidden">
+    <div className="min-h-screen bg-black text-white font-sans overflow-x-hidden" style={{ scrollbarWidth: "none" }}>
+      <style>{`
+        ::-webkit-scrollbar { display: none; }
+        html { scrollbar-width: none; }
+      `}</style>
       {/* Fixed Header - always visible, transparent at top */}
       <header
         className="fixed top-0 left-0 right-0 z-50 bg-black/40 backdrop-blur-lg border-b border-white/5 transition-all"
