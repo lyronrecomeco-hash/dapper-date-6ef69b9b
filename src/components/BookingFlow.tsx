@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowLeft, ArrowRight, Check, Calendar, User, Clock, Send, X, Loader2 } from "lucide-react";
+import { ArrowLeft, ArrowRight, Check, Calendar, User, Clock, Send, X, Loader2, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import type { User as AuthUser } from "@supabase/supabase-js";
@@ -41,8 +41,8 @@ const BookingFlow = ({ service, onClose, user }: BookingFlowProps) => {
   const [bookedTimes, setBookedTimes] = useState<string[]>([]);
   const [settings, setSettings] = useState<Record<string, string>>({});
   const [loadingTimes, setLoadingTimes] = useState(false);
+  const [showConfirmation, setShowConfirmation] = useState(false);
 
-  // Fetch barbers and settings on mount
   useEffect(() => {
     const fetchData = async () => {
       const [barbersRes, settingsRes] = await Promise.all([
@@ -59,7 +59,6 @@ const BookingFlow = ({ service, onClose, user }: BookingFlowProps) => {
     fetchData();
   }, []);
 
-  // Fetch booked times when date or barber changes
   useEffect(() => {
     if (!selectedDate || !selectedBarber) { setBookedTimes([]); return; }
     const fetchBooked = async () => {
@@ -76,7 +75,6 @@ const BookingFlow = ({ service, onClose, user }: BookingFlowProps) => {
     fetchBooked();
   }, [selectedDate, selectedBarber]);
 
-  // Generate available times from settings
   const generateTimes = () => {
     const opening = settings.opening_time || "09:00";
     const closing = settings.closing_time || "19:00";
@@ -133,8 +131,49 @@ const BookingFlow = ({ service, onClose, user }: BookingFlowProps) => {
     return dates;
   };
 
+  const sendWhatsAppConfirmation = async (phoneNumber: string, dateFormatted: string) => {
+    const businessName = settings.business_name || "Barbearia";
+    const businessAddress = settings.address || "";
+    
+    const msg = `✅ *Agendamento Confirmado!*\n\n` +
+      `Olá, *${name}*! Seu agendamento foi realizado com sucesso.\n\n` +
+      `📋 *Detalhes do agendamento:*\n` +
+      `━━━━━━━━━━━━━━━━━\n` +
+      `💈 *Serviço:* ${service.title}\n` +
+      `✂️ *Barbeiro:* ${selectedBarber?.name}\n` +
+      `📅 *Data:* ${dateFormatted}\n` +
+      `🕐 *Horário:* ${selectedTime}\n` +
+      `💰 *Valor:* R$ ${service.price.toFixed(2)}\n` +
+      `━━━━━━━━━━━━━━━━━\n\n` +
+      (businessAddress ? `📍 *Local:* ${businessAddress}\n\n` : "") +
+      `⚠️ *Importante:*\n` +
+      `• Chegue com 5 minutos de antecedência\n` +
+      `• Em caso de cancelamento, avise com antecedência\n\n` +
+      `Obrigado pela preferência! 💈✨\n` +
+      `*${businessName}*`;
+
+    try {
+      const res = await supabase.functions.invoke("chatpro", {
+        body: {
+          action: "send_message",
+          phone: phoneNumber,
+          message: msg,
+        },
+      });
+
+      if (res.data?.success && res.data?.reason !== "chatpro_not_configured") {
+        console.log("WhatsApp confirmation sent via ChatPro");
+        return true;
+      }
+      console.log("ChatPro not available, skipping WhatsApp send:", res.data?.reason);
+      return false;
+    } catch (err) {
+      console.error("Error sending WhatsApp:", err);
+      return false;
+    }
+  };
+
   const handleConfirm = async () => {
-    // Input validation
     const trimmedName = name.trim();
     if (!trimmedName || trimmedName.length < 2 || trimmedName.length > 100) {
       toast.error("Nome inválido. Use entre 2 e 100 caracteres.");
@@ -169,19 +208,74 @@ const BookingFlow = ({ service, onClose, user }: BookingFlowProps) => {
     });
 
     if (error) { toast.error("Erro ao agendar. Tente novamente."); setSubmitting(false); return; }
-    toast.success("Agendamento realizado com sucesso!");
 
-    const whatsapp = settings.whatsapp_number || "5511999999999";
+    // Send WhatsApp confirmation via ChatPro
     const dateFormatted = selectedDate ? new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR") : "";
-    const msg = `Olá! Gostaria de confirmar meu agendamento:%0A%0A📋 *Serviço:* ${service.title}%0A💈 *Barbeiro:* ${selectedBarber?.name}%0A📅 *Data:* ${dateFormatted}%0A🕐 *Horário:* ${selectedTime}%0A👤 *Nome:* ${name}%0A📱 *Telefone:* ${phone}%0A💰 *Valor:* R$ ${service.price}`;
-    window.open(`https://wa.me/${whatsapp}?text=${msg}`, "_blank");
+    await sendWhatsAppConfirmation(digitsOnly, dateFormatted);
 
     setSubmitting(false);
-    onClose();
+    setShowConfirmation(true);
   };
 
   const dates = generateDates();
   const slideVariants = { enter: { x: 40, opacity: 0 }, center: { x: 0, opacity: 1 }, exit: { x: -40, opacity: 0 } };
+
+  // Confirmation modal
+  if (showConfirmation) {
+    return (
+      <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+        className="fixed inset-0 z-50 flex items-center justify-center p-4"
+        style={{ background: 'hsl(230 20% 7% / 0.85)', backdropFilter: 'blur(12px)' }}>
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0, y: 20 }}
+          animate={{ scale: 1, opacity: 1, y: 0 }}
+          transition={{ type: "spring", duration: 0.5 }}
+          className="glass-card-strong w-full max-w-sm p-6 text-center space-y-5"
+        >
+          <motion.div
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+            className="w-20 h-20 rounded-full mx-auto flex items-center justify-center"
+            style={{ background: "hsl(140 60% 45% / 0.12)", border: "2px solid hsl(140 60% 45% / 0.3)" }}
+          >
+            <CheckCircle className="w-10 h-10" style={{ color: "hsl(140 60% 50%)" }} />
+          </motion.div>
+
+          <div>
+            <h3 className="text-xl font-bold text-foreground">Agendamento Confirmado!</h3>
+            <p className="text-sm text-muted-foreground mt-2">
+              Você receberá uma confirmação no seu WhatsApp com todos os detalhes do agendamento.
+            </p>
+          </div>
+
+          <div className="p-4 rounded-xl space-y-2" style={{ background: "hsl(0 0% 100% / 0.03)", border: "1px solid hsl(0 0% 100% / 0.06)" }}>
+            {[
+              { icon: "💈", text: service.title },
+              { icon: "✂️", text: selectedBarber?.name || "" },
+              { icon: "📅", text: selectedDate ? new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR") : "" },
+              { icon: "🕐", text: selectedTime },
+              { icon: "💰", text: `R$ ${service.price.toFixed(2)}` },
+            ].map((item, i) => (
+              <div key={i} className="flex items-center gap-2 text-sm">
+                <span>{item.icon}</span>
+                <span className="text-foreground/80">{item.text}</span>
+              </div>
+            ))}
+          </div>
+
+          <motion.button
+            onClick={onClose}
+            className="w-full py-3 rounded-xl font-bold text-sm transition-all"
+            style={{ background: "hsl(245 60% 55%)", color: "white", boxShadow: "0 4px 20px hsl(245 60% 55% / 0.25)" }}
+            whileTap={{ scale: 0.98 }}
+          >
+            Entendido ✨
+          </motion.button>
+        </motion.div>
+      </motion.div>
+    );
+  }
 
   return (
     <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
@@ -365,8 +459,9 @@ const BookingFlow = ({ service, onClose, user }: BookingFlowProps) => {
           ) : (
             <button onClick={handleConfirm} disabled={submitting}
               className="flex items-center gap-2 px-6 py-3 rounded-xl text-sm font-semibold transition-all disabled:opacity-50"
-              style={{ background: 'hsl(142 70% 40%)', color: 'white', boxShadow: '0 4px 20px hsl(142 70% 40% / 0.25)' }}>
-              <Send className="w-4 h-4" /> {submitting ? "Enviando..." : "Confirmar & WhatsApp"}
+              style={{ background: 'hsl(245 60% 55%)', color: 'white', boxShadow: '0 4px 20px hsl(245 60% 55% / 0.25)' }}>
+              {submitting ? <Loader2 className="w-4 h-4 animate-spin" /> : <CheckCircle className="w-4 h-4" />}
+              {submitting ? "Confirmando..." : "Confirmar Agendamento"}
             </button>
           )}
         </div>
