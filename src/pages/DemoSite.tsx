@@ -66,10 +66,9 @@ const DemoSite = () => {
 
   return (
     <div className="min-h-screen bg-black text-white font-sans overflow-x-hidden">
-      {/* Fixed Header */}
-      <motion.header
-        style={{ opacity: headerOpacity }}
-        className="fixed top-0 left-0 right-0 z-50 bg-black/80 backdrop-blur-xl border-b border-white/5"
+      {/* Fixed Header - always visible, transparent at top */}
+      <header
+        className="fixed top-0 left-0 right-0 z-50 bg-black/40 backdrop-blur-lg border-b border-white/5 transition-all"
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           <img src={LOGO} alt="Jack Hair" className="h-10 sm:h-14 w-auto" />
@@ -217,7 +216,7 @@ const DemoSite = () => {
                 onClick={goToBooking}
               >
                 <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-2xl flex items-center justify-center" style={{ background: "hsl(45 100% 50% / 0.08)" }}>
-                  <img src={s.icon} alt={s.name} className="w-7 h-7 sm:w-9 sm:h-9" loading="lazy" />
+                  <span className="text-2xl sm:text-3xl">{s.emoji}</span>
                 </div>
                 <span className="text-xs sm:text-sm font-semibold text-center text-white/80">{s.name}</span>
               </motion.div>
