@@ -21,18 +21,18 @@ const portfolioImages = [
 ];
 
 const services = [
-  { name: "Cabelo & Barba", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/haircut.png" },
-  { name: "Relaxamento", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hair.png" },
-  { name: "Barbaterapia", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/beard.png" },
-  { name: "Progressiva", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hair-iron.png" },
-  { name: "Platinado", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hair-dye.png" },
-  { name: "Tintura de Cabelo", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/paint.png" },
-  { name: "Unha (Pé e Mão)", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/nail-polish.png" },
-  { name: "Sobrancelha", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/eyebrow.png" },
-  { name: "Luzes e Mechas", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hairdresser.png" },
-  { name: "Limpeza de Pele", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/cleansing.png" },
-  { name: "Hidratação", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hairdresser.png" },
-  { name: "Botox Capilar", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hairdresser.png" },
+  { name: "Cabelo & Barba", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/haircut.png", emoji: "✂️" },
+  { name: "Relaxamento", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hair.png", emoji: "💆" },
+  { name: "Barbaterapia", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/beard.png", emoji: "🪒" },
+  { name: "Progressiva", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hair-iron.png", emoji: "💇" },
+  { name: "Platinado", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hair-dye.png", emoji: "⭐" },
+  { name: "Tintura de Cabelo", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/paint.png", emoji: "🎨" },
+  { name: "Unha (Pé e Mão)", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/nail-polish.png", emoji: "💅" },
+  { name: "Sobrancelha", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/eyebrow.png", emoji: "👁️" },
+  { name: "Luzes e Mechas", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hairdresser.png", emoji: "✨" },
+  { name: "Limpeza de Pele", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/cleansing.png", emoji: "🧖" },
+  { name: "Hidratação", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hairdresser.png", emoji: "💧" },
+  { name: "Botox Capilar", icon: "https://salaojack.com.br/wp-content/uploads/2023/11/hairdresser.png", emoji: "💎" },
 ];
 
 const reviews = [
