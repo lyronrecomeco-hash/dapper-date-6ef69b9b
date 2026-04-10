@@ -394,18 +394,16 @@ const VilaNova = () => {
                 ))}
               </nav>
               <div className="p-4 space-y-3" style={{ borderTop: "1px solid hsl(0 0% 100% / 0.06)" }}>
+                <button onClick={() => { setMobileMenu(false); handleGoToMember(); }}
+                  className="block w-full text-center px-5 py-3 rounded-xl text-sm font-medium"
+                  style={{ background: "hsl(0 0% 100% / 0.06)", border: "1px solid hsl(0 0% 100% / 0.08)", color: "hsl(0 0% 70%)" }}>
+                  {user ? `👤 ${userName}` : "Minha Conta"}
+                </button>
                 <a href="#servicos" onClick={() => setMobileMenu(false)}
                   className="block w-full text-center px-5 py-3.5 rounded-xl text-sm font-bold"
                   style={{ background: selBg, color: selColor }}>
                   Agendar Agora
                 </a>
-                {user && (
-                  <button onClick={handleSignOut}
-                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium"
-                    style={{ background: "hsl(0 60% 50% / 0.08)", color: "hsl(0 60% 65%)", border: "1px solid hsl(0 60% 50% / 0.12)" }}>
-                    <LogOut className="w-4 h-4" /> Sair
-                  </button>
-                )}
               </div>
             </motion.div>
           </>
