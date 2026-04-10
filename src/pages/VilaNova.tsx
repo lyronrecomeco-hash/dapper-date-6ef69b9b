@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence, useScroll, useTransform } from "framer-motion";
-import { Scissors, Clock, MapPin, Phone, Instagram, ChevronRight, ChevronDown, Star, X, ArrowLeft, ArrowRight, Check, Calendar, User, Send, Loader2, CheckCircle, Menu } from "lucide-react";
+import { Scissors, Clock, MapPin, Phone, Instagram, ChevronRight, ChevronDown, Star, X, ArrowLeft, ArrowRight, Check, Calendar, User, Send, Loader2, CheckCircle, Menu, LogOut, Award, Users, Heart } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import type { User as AuthUser } from "@supabase/supabase-js";
 
 import heroImg1 from "@/assets/vilanova-hero-1.jpg";
 import heroImg2 from "@/assets/vilanova-hero-2.jpg";
@@ -35,6 +36,10 @@ const VilaNova = () => {
   const [mobileMenu, setMobileMenu] = useState(false);
   const [scrolled, setScrolled] = useState(false);
 
+  // Auth state
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [authReady, setAuthReady] = useState(false);
+
   // Booking state
   const [currentStep, setCurrentStep] = useState(0);
   const [selectedBarber, setSelectedBarber] = useState<DBBarber | null>(null);
@@ -53,6 +58,27 @@ const VilaNova = () => {
   const { scrollYProgress } = useScroll({ target: heroRef, offset: ["start start", "end start"] });
   const heroScale = useTransform(scrollYProgress, [0, 1], [1, 1.15]);
   const heroOpacity = useTransform(scrollYProgress, [0, 0.8], [1, 0]);
+
+  // Auth listener
+  useEffect(() => {
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+      setAuthReady(true);
+      if (session?.user) {
+        const meta = session.user.user_metadata;
+        if (meta?.full_name) {
+          const parts = meta.full_name.split(" ");
+          setName(parts[0] || "");
+          setSurname(parts.slice(1).join(" ") || "");
+        }
+        if (meta?.phone) setPhone(meta.phone);
+      }
+    });
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      setUser(session?.user ?? null);
+    });
+    return () => subscription.unsubscribe();
+  }, []);
 
   useEffect(() => {
     const handleScroll = () => setScrolled(window.scrollY > 60);
@@ -139,14 +165,61 @@ const VilaNova = () => {
 
   const availableTimes = generateTimes();
   const dates = generateDates();
+
+  // If user is logged in, skip step 3 validation for name/phone (auto-filled)
+  const isLoggedIn = !!user;
   const canProceed = () => {
     switch (currentStep) {
       case 0: return true;
       case 1: return !!selectedBarber;
       case 2: return !!selectedDate && !!selectedTime;
-      case 3: return !!name && !!surname && !!phone && !!password;
+      case 3:
+        if (isLoggedIn) return !!name && !!surname && !!phone;
+        return !!name && !!surname && !!phone && !!password;
       default: return true;
     }
+  };
+
+  const handleSignUp = async (): Promise<boolean> => {
+    const digitsOnly = phone.replace(/\D/g, "");
+    const email = `${digitsOnly}@vilanova.barber`;
+    const fullName = `${name.trim()} ${surname.trim()}`;
+
+    // Try sign up
+    const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        data: {
+          full_name: fullName,
+          phone: phone,
+        },
+      },
+    });
+
+    if (signUpError) {
+      // If user already exists, try to sign in
+      if (signUpError.message?.includes("already registered") || signUpError.message?.includes("already been registered")) {
+        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (signInError) {
+          toast.error("Senha incorreta para este telefone. Tente novamente.");
+          return false;
+        }
+        setUser(signInData.user);
+        return true;
+      }
+      toast.error("Erro ao criar conta. Tente novamente.");
+      console.error("SignUp error:", signUpError);
+      return false;
+    }
+
+    if (signUpData.user) {
+      setUser(signUpData.user);
+    }
+    return true;
   };
 
   const handleConfirm = async () => {
@@ -155,10 +228,23 @@ const VilaNova = () => {
     const digitsOnly = phone.replace(/\D/g, "");
     if (digitsOnly.length < 10) { toast.error("Telefone inválido."); return; }
     setSubmitting(true);
+
+    // Create account if not logged in
+    if (!isLoggedIn) {
+      if (!password || password.length < 6) {
+        toast.error("Senha deve ter no mínimo 6 caracteres.");
+        setSubmitting(false);
+        return;
+      }
+      const authOk = await handleSignUp();
+      if (!authOk) { setSubmitting(false); return; }
+    }
+
     const { error } = await supabase.from("appointments").insert({
       service_id: selectedService!.id,
       customer_name: `${name.trim()} ${surname.trim()}`,
       customer_phone: phone,
+      customer_email: user?.email || `${digitsOnly}@vilanova.barber`,
       barber_name: selectedBarber?.name || null,
       appointment_date: selectedDate,
       appointment_time: selectedTime,
@@ -179,13 +265,23 @@ const VilaNova = () => {
 
   const closeBooking = () => {
     setSelectedService(null); setCurrentStep(0); setSelectedBarber(null);
-    setSelectedDate(""); setSelectedTime(""); setName(""); setSurname("");
-    setPhone(""); setPassword(""); setShowConfirmation(false);
+    setSelectedDate(""); setSelectedTime("");
+    if (!isLoggedIn) { setName(""); setSurname(""); setPhone(""); }
+    setPassword(""); setShowConfirmation(false);
+  };
+
+  const handleSignOut = async () => {
+    await supabase.auth.signOut();
+    setUser(null);
+    setName(""); setSurname(""); setPhone("");
+    setMobileMenu(false);
   };
 
   const selBg = "hsl(0 0% 95%)";
   const selColor = "hsl(230 20% 7%)";
   const selShadow = "0 4px 20px hsl(0 0% 100% / 0.15)";
+
+  const userName = user?.user_metadata?.full_name?.split(" ")[0] || name || "Usuário";
 
   const navLinks = [
     { label: "Início", href: "#" },
@@ -204,28 +300,43 @@ const VilaNova = () => {
         style={{
           background: scrolled ? "hsl(220 20% 4% / 0.85)" : "transparent",
           backdropFilter: scrolled ? "blur(20px)" : "none",
+          WebkitBackdropFilter: scrolled ? "blur(20px)" : "none",
           borderBottom: scrolled ? "1px solid hsl(0 0% 100% / 0.06)" : "none",
         }}
       >
         <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 sm:h-20 flex items-center justify-between">
           <a href="#" className="flex items-center gap-2.5">
             <div className="w-9 h-9 rounded-lg flex items-center justify-center" style={{ background: "hsl(0 0% 95%)" }}>
-              <Scissors className="w-4.5 h-4.5" style={{ color: "hsl(220 20% 7%)" }} />
+              <Scissors className="w-4 h-4" style={{ color: "hsl(220 20% 7%)" }} />
             </div>
             <span className="text-lg font-extrabold tracking-tight">Vila Nova</span>
           </a>
 
           {/* Desktop nav */}
-          <div className="hidden md:flex items-center gap-8">
+          <div className="hidden md:flex items-center gap-6 lg:gap-8">
             {navLinks.map((link) => (
               <a key={link.label} href={link.href} className="text-sm font-medium transition-colors hover:text-white" style={{ color: "hsl(0 0% 60%)" }}>
                 {link.label}
               </a>
             ))}
-            <a href="#servicos" className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:translate-y-[-1px]"
-              style={{ background: selBg, color: selColor }}>
-              Agendar
-            </a>
+            {user ? (
+              <div className="flex items-center gap-3">
+                <div className="flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: "hsl(0 0% 100% / 0.06)", border: "1px solid hsl(0 0% 100% / 0.08)" }}>
+                  <div className="w-7 h-7 rounded-lg flex items-center justify-center text-xs font-bold" style={{ background: selBg, color: selColor }}>
+                    {userName.charAt(0).toUpperCase()}
+                  </div>
+                  <span className="text-sm font-medium">{userName}</span>
+                </div>
+                <button onClick={handleSignOut} className="p-2 rounded-lg transition-all hover:bg-white/5" title="Sair">
+                  <LogOut className="w-4 h-4" style={{ color: "hsl(0 0% 50%)" }} />
+                </button>
+              </div>
+            ) : (
+              <a href="#servicos" className="px-5 py-2.5 rounded-xl text-sm font-bold transition-all hover:translate-y-[-1px]"
+                style={{ background: selBg, color: selColor }}>
+                Agendar
+              </a>
+            )}
           </div>
 
           {/* Mobile menu btn */}
@@ -246,7 +357,19 @@ const VilaNova = () => {
               className="fixed top-0 right-0 bottom-0 z-[70] w-[80vw] max-w-xs flex flex-col"
               style={{ background: "hsl(220 18% 6%)", borderLeft: "1px solid hsl(0 0% 100% / 0.06)" }}>
               <div className="p-5 flex justify-between items-center" style={{ borderBottom: "1px solid hsl(0 0% 100% / 0.06)" }}>
-                <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: "hsl(0 0% 50%)" }}>Menu</span>
+                {user ? (
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold" style={{ background: selBg, color: selColor }}>
+                      {userName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <p className="text-sm font-bold">{userName}</p>
+                      <p className="text-[10px]" style={{ color: "hsl(0 0% 50%)" }}>Cliente</p>
+                    </div>
+                  </div>
+                ) : (
+                  <span className="text-xs uppercase tracking-widest font-semibold" style={{ color: "hsl(0 0% 50%)" }}>Menu</span>
+                )}
                 <button onClick={() => setMobileMenu(false)} className="p-2 rounded-lg" style={{ background: "hsl(0 0% 100% / 0.05)" }}>
                   <X className="w-4 h-4" style={{ color: "hsl(0 0% 60%)" }} />
                 </button>
@@ -260,12 +383,19 @@ const VilaNova = () => {
                   </a>
                 ))}
               </nav>
-              <div className="p-4" style={{ borderTop: "1px solid hsl(0 0% 100% / 0.06)" }}>
+              <div className="p-4 space-y-3" style={{ borderTop: "1px solid hsl(0 0% 100% / 0.06)" }}>
                 <a href="#servicos" onClick={() => setMobileMenu(false)}
                   className="block w-full text-center px-5 py-3.5 rounded-xl text-sm font-bold"
                   style={{ background: selBg, color: selColor }}>
                   Agendar Agora
                 </a>
+                {user && (
+                  <button onClick={handleSignOut}
+                    className="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-medium"
+                    style={{ background: "hsl(0 60% 50% / 0.08)", color: "hsl(0 60% 65%)", border: "1px solid hsl(0 60% 50% / 0.12)" }}>
+                    <LogOut className="w-4 h-4" /> Sair
+                  </button>
+                )}
               </div>
             </motion.div>
           </>
@@ -340,49 +470,92 @@ const VilaNova = () => {
       </section>
 
       {/* ─── ABOUT ─── */}
-      <section id="sobre" className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8">
+      <section id="sobre" className="py-20 sm:py-28 lg:py-36 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <motion.div initial={{ opacity: 0, y: 40 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.7 }}>
-            <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <div className="w-10 h-px" style={{ background: "hsl(0 0% 100% / 0.15)" }} />
-                  <span className="text-[11px] font-bold uppercase tracking-[0.35em]" style={{ color: "hsl(0 0% 100% / 0.35)" }}>Sobre nós</span>
-                </div>
-                <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black mb-6 leading-tight tracking-tight">
+            
+            {/* Section label */}
+            <div className="flex items-center gap-3 mb-10 lg:mb-14">
+              <div className="w-10 h-px" style={{ background: "hsl(0 0% 100% / 0.15)" }} />
+              <span className="text-[11px] font-bold uppercase tracking-[0.35em]" style={{ color: "hsl(0 0% 100% / 0.35)" }}>Sobre nós</span>
+            </div>
+
+            <div className="grid lg:grid-cols-12 gap-12 lg:gap-16 items-start">
+              {/* Text content - takes 5 columns on desktop */}
+              <div className="lg:col-span-5">
+                <h2 className="text-3xl sm:text-4xl lg:text-5xl xl:text-6xl font-black mb-8 leading-[1.05] tracking-tight">
                   Tradição que<br />inspira estilo
                 </h2>
-                <p className="text-sm sm:text-base leading-relaxed mb-8" style={{ color: "hsl(0 0% 100% / 0.45)" }}>
-                  Buscando sempre atualizações e melhorias para o conforto do cliente. Na Vila Nova, cada corte é uma experiência única, com profissionais qualificados e ambiente acolhedor que transformam seu visual.
+                <p className="text-sm sm:text-base leading-relaxed mb-6" style={{ color: "hsl(0 0% 100% / 0.5)" }}>
+                  Buscando sempre atualizações e melhorias para o conforto do cliente. Na Vila Nova, cada corte é uma experiência única, com profissionais qualificados e ambiente acolhedor.
                 </p>
-                <div className="grid grid-cols-3 gap-6">
+                <p className="text-sm sm:text-base leading-relaxed mb-10" style={{ color: "hsl(0 0% 100% / 0.4)" }}>
+                  Nosso espaço foi pensado para oferecer o melhor em cuidado masculino. Desde cortes clássicos até os estilos mais modernos, nossa equipe domina todas as técnicas para transformar seu visual.
+                </p>
+
+                {/* Features */}
+                <div className="space-y-4 mb-10">
                   {[
-                    { number: "5+", label: "Anos de\nexperiência" },
-                    { number: "3K+", label: "Clientes\nsatisfeitos" },
-                    { number: "5.0", label: "Avaliação\nno Google" },
+                    { icon: Award, title: "Profissionais Certificados", desc: "Equipe treinada e sempre atualizada com as tendências" },
+                    { icon: Users, title: "Atendimento Personalizado", desc: "Cada cliente recebe atenção exclusiva e dedicada" },
+                    { icon: Heart, title: "Ambiente Premium", desc: "Espaço confortável, moderno e acolhedor para relaxar" },
+                  ].map((feat) => (
+                    <div key={feat.title} className="flex gap-4 items-start p-4 rounded-2xl transition-all"
+                      style={{ background: "hsl(0 0% 100% / 0.02)", border: "1px solid hsl(0 0% 100% / 0.04)" }}>
+                      <div className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0" style={{ background: "hsl(0 0% 100% / 0.06)" }}>
+                        <feat.icon className="w-5 h-5" style={{ color: "hsl(0 0% 70%)" }} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold mb-0.5">{feat.title}</h4>
+                        <p className="text-xs leading-relaxed" style={{ color: "hsl(0 0% 100% / 0.4)" }}>{feat.desc}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+
+                {/* Stats */}
+                <div className="grid grid-cols-3 gap-4">
+                  {[
+                    { number: "5+", label: "Anos" },
+                    { number: "3K+", label: "Clientes" },
+                    { number: "5.0", label: "Avaliação" },
                   ].map((stat) => (
-                    <div key={stat.label} className="text-center sm:text-left">
-                      <span className="text-3xl sm:text-4xl font-black">{stat.number}</span>
-                      <p className="text-[11px] sm:text-xs mt-1 whitespace-pre-line leading-tight" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{stat.label}</p>
+                    <div key={stat.label} className="text-center p-4 rounded-xl" style={{ background: "hsl(0 0% 100% / 0.02)", border: "1px solid hsl(0 0% 100% / 0.04)" }}>
+                      <span className="text-2xl sm:text-3xl font-black block">{stat.number}</span>
+                      <p className="text-[10px] sm:text-xs mt-1 font-medium" style={{ color: "hsl(0 0% 100% / 0.35)" }}>{stat.label}</p>
                     </div>
                   ))}
                 </div>
               </div>
-              <div className="grid grid-cols-2 gap-3 sm:gap-4">
-                <div className="space-y-3 sm:space-y-4">
-                  <div className="rounded-2xl overflow-hidden aspect-[3/4]" style={{ border: "1px solid hsl(0 0% 100% / 0.06)" }}>
-                    <img src={heroImg2} alt="Barba" className="w-full h-full object-cover" loading="lazy" />
+
+              {/* Image grid - takes 7 columns on desktop */}
+              <div className="lg:col-span-7">
+                <div className="grid grid-cols-12 gap-3 sm:gap-4">
+                  {/* Large featured image */}
+                  <div className="col-span-7 rounded-2xl overflow-hidden" style={{ border: "1px solid hsl(0 0% 100% / 0.06)" }}>
+                    <div className="aspect-[3/4]">
+                      <img src={heroImg1} alt="Barbearia Vila Nova Interior" className="w-full h-full object-cover" loading="lazy" />
+                    </div>
                   </div>
-                  <div className="rounded-2xl overflow-hidden aspect-square" style={{ border: "1px solid hsl(0 0% 100% / 0.06)" }}>
-                    <img src={galleryImg1} alt="Ferramentas" className="w-full h-full object-cover" loading="lazy" />
+                  {/* Right column with 2 stacked images */}
+                  <div className="col-span-5 flex flex-col gap-3 sm:gap-4">
+                    <div className="rounded-2xl overflow-hidden flex-1" style={{ border: "1px solid hsl(0 0% 100% / 0.06)" }}>
+                      <img src={heroImg2} alt="Barba profissional" className="w-full h-full object-cover" loading="lazy" />
+                    </div>
+                    <div className="rounded-2xl overflow-hidden flex-1" style={{ border: "1px solid hsl(0 0% 100% / 0.06)" }}>
+                      <img src={galleryImg1} alt="Ferramentas profissionais" className="w-full h-full object-cover" loading="lazy" />
+                    </div>
                   </div>
-                </div>
-                <div className="space-y-3 sm:space-y-4 pt-8">
-                  <div className="rounded-2xl overflow-hidden aspect-square" style={{ border: "1px solid hsl(0 0% 100% / 0.06)" }}>
-                    <img src={heroImg3} alt="Corte" className="w-full h-full object-cover" loading="lazy" />
+                  {/* Bottom row with 2 images */}
+                  <div className="col-span-5 rounded-2xl overflow-hidden" style={{ border: "1px solid hsl(0 0% 100% / 0.06)" }}>
+                    <div className="aspect-[4/3]">
+                      <img src={heroImg3} alt="Corte moderno" className="w-full h-full object-cover" loading="lazy" />
+                    </div>
                   </div>
-                  <div className="rounded-2xl overflow-hidden aspect-[3/4]" style={{ border: "1px solid hsl(0 0% 100% / 0.06)" }}>
-                    <img src={galleryImg3} alt="Ambiente" className="w-full h-full object-cover" loading="lazy" />
+                  <div className="col-span-7 rounded-2xl overflow-hidden" style={{ border: "1px solid hsl(0 0% 100% / 0.06)" }}>
+                    <div className="aspect-[4/3]">
+                      <img src={galleryImg3} alt="Ambiente acolhedor" className="w-full h-full object-cover" loading="lazy" />
+                    </div>
                   </div>
                 </div>
               </div>
@@ -401,6 +574,9 @@ const VilaNova = () => {
               <div className="w-10 h-px" style={{ background: "hsl(0 0% 100% / 0.15)" }} />
             </div>
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight">Escolha seu serviço</h2>
+            <p className="text-sm sm:text-base mt-4 max-w-md mx-auto" style={{ color: "hsl(0 0% 100% / 0.4)" }}>
+              Selecione o serviço desejado e agende no melhor horário para você.
+            </p>
           </motion.div>
 
           <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -452,7 +628,7 @@ const VilaNova = () => {
             <h2 className="text-3xl sm:text-4xl lg:text-5xl font-black tracking-tight">Nosso trabalho</h2>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3 lg:gap-4">
             {galleryImages.map((img, i) => (
               <motion.div
                 key={i}
@@ -692,11 +868,17 @@ const VilaNova = () => {
 
                 {currentStep === 3 && (
                   <div className="space-y-4">
+                    {isLoggedIn && (
+                      <div className="flex items-center gap-3 p-3 rounded-xl mb-2" style={{ background: "hsl(140 60% 45% / 0.08)", border: "1px solid hsl(140 60% 45% / 0.15)" }}>
+                        <CheckCircle className="w-4 h-4 shrink-0" style={{ color: "hsl(140 60% 50%)" }} />
+                        <p className="text-xs" style={{ color: "hsl(140 60% 65%)" }}>Logado como <strong>{userName}</strong>. Seus dados foram preenchidos automaticamente.</p>
+                      </div>
+                    )}
                     {[
                       { label: "Nome", icon: <User className="w-4 h-4" />, type: "text", value: name, set: setName, placeholder: "Seu nome" },
                       { label: "Sobrenome", icon: <User className="w-4 h-4" />, type: "text", value: surname, set: setSurname, placeholder: "Seu sobrenome" },
                       { label: "WhatsApp", icon: <Send className="w-4 h-4" />, type: "tel", value: phone, set: setPhone, placeholder: "(27) 99999-9999" },
-                      { label: "Senha", icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, type: "password", value: password, set: setPassword, placeholder: "Crie uma senha" },
+                      ...(!isLoggedIn ? [{ label: "Senha", icon: <svg className="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect width="18" height="11" x="3" y="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>, type: "password", value: password, set: setPassword, placeholder: "Crie uma senha (min. 6 caracteres)" }] : []),
                     ].map((field) => (
                       <div key={field.label}>
                         <label className="text-sm font-semibold flex items-center gap-2 mb-2" style={{ color: "hsl(0 0% 80%)" }}>
@@ -707,6 +889,11 @@ const VilaNova = () => {
                           style={{ background: "hsl(0 0% 100% / 0.04)", border: "1px solid hsl(0 0% 100% / 0.08)", color: "hsl(0 0% 93%)" }} />
                       </div>
                     ))}
+                    {!isLoggedIn && (
+                      <p className="text-[11px] mt-1" style={{ color: "hsl(0 0% 100% / 0.3)" }}>
+                        Ao confirmar, sua conta será criada automaticamente para futuros agendamentos.
+                      </p>
+                    )}
                   </div>
                 )}
 
@@ -774,6 +961,11 @@ const VilaNova = () => {
               <div>
                 <h3 className="text-xl font-bold">Agendamento Confirmado!</h3>
                 <p className="text-sm mt-2" style={{ color: "hsl(0 0% 55%)" }}>Confira no seu WhatsApp os detalhes.</p>
+                {!isLoggedIn && (
+                  <p className="text-xs mt-3 px-4 py-2 rounded-lg inline-block" style={{ background: "hsl(0 0% 100% / 0.04)", color: "hsl(0 0% 100% / 0.5)" }}>
+                    ✅ Sua conta foi criada com sucesso!
+                  </p>
+                )}
               </div>
               <motion.button onClick={closeBooking}
                 className="w-full py-3.5 rounded-xl font-bold text-sm"
