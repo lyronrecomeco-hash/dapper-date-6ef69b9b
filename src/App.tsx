@@ -20,6 +20,8 @@ import Navigation from "./pages/Navigation";
 import BaixarSource from "./pages/BaixarSource";
 import DemoSite from "./pages/DemoSite";
 import VilaNova from "./pages/VilaNova";
+import MemberLogin from "./pages/MemberLogin";
+import MemberArea from "./pages/MemberArea";
 
 const queryClient = new QueryClient();
 
@@ -34,6 +36,8 @@ const App = () => (
           <Route path="/navegacao" element={<Navigation />} />
           <Route path="/demo-site" element={<DemoSite />} />
           <Route path="/vilanova" element={<VilaNova />} />
+          <Route path="/vilanova/login" element={<MemberLogin />} />
+          <Route path="/vilanova/membro" element={<MemberArea />} />
           <Route path="/baixar-source" element={<BaixarSource />} />
           <Route path="/admin/login" element={<AdminLogin />} />
           <Route path="/admin" element={<AdminLayout />}>
