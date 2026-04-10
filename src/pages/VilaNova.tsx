@@ -240,11 +240,12 @@ const VilaNova = () => {
       if (!authOk) { setSubmitting(false); return; }
     }
 
+    const customerEmail = `${digitsOnly}@vilanova.barber`;
     const { error } = await supabase.from("appointments").insert({
       service_id: selectedService!.id,
       customer_name: `${name.trim()} ${surname.trim()}`,
       customer_phone: phone,
-      customer_email: user?.email || `${digitsOnly}@vilanova.barber`,
+      customer_email: customerEmail,
       barber_name: selectedBarber?.name || null,
       appointment_date: selectedDate,
       appointment_time: selectedTime,
@@ -254,7 +255,8 @@ const VilaNova = () => {
     if (error) { toast.error("Erro ao agendar."); setSubmitting(false); return; }
     try {
       const dateFormatted = new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR");
-      const msg = `✅ *Agendamento Confirmado!*\n\nOlá *${name}*, tudo certo!\n\n💈 ${selectedService!.title}\n✂️ ${selectedBarber?.name}\n📅 ${dateFormatted} às ${selectedTime}\n💰 R$ ${selectedService!.price.toFixed(2)}\n\n📍 Rua Exemplo, 123 - Centro, Colatina/ES\n⏰ Chegue 5 min antes\n\n*Barbearia Vila Nova* 💈`;
+      const memberLink = `https://vilanova-demo.vercel.app/vilanova/membro`;
+      const msg = `✅ *Agendamento Confirmado!*\n\nOlá *${name}*, tudo certo!\n\n💈 ${selectedService!.title}\n✂️ ${selectedBarber?.name}\n📅 ${dateFormatted} às ${selectedTime}\n💰 R$ ${selectedService!.price.toFixed(2)}\n\n📍 Av. Afonso Pena, 1500 - Centro, Belo Horizonte/MG\n⏰ Chegue 5 min antes\n\n🔗 Acesse sua área de membro:\n${memberLink}\n\n*Barbearia Vila Nova* 💈`;
       await supabase.functions.invoke("chatpro", {
         body: { action: "send_message", phone: digitsOnly, message: msg },
       });
@@ -707,13 +709,13 @@ const VilaNova = () => {
               <h4 className="font-bold text-sm mb-5">Contato</h4>
               <div className="space-y-3">
                 <div className="flex items-center gap-2.5 text-xs" style={{ color: "hsl(0 0% 100% / 0.4)" }}>
-                  <MapPin className="w-3.5 h-3.5 shrink-0" /> Colatina, ES
+                  <MapPin className="w-3.5 h-3.5 shrink-0" /> Av. Afonso Pena, 1500 - Centro, Belo Horizonte/MG
                 </div>
                 <div className="flex items-center gap-2.5 text-xs" style={{ color: "hsl(0 0% 100% / 0.4)" }}>
-                  <Phone className="w-3.5 h-3.5 shrink-0" /> (27) 99999-9999
+                  <Phone className="w-3.5 h-3.5 shrink-0" /> (31) 99999-9999
                 </div>
                 <div className="flex items-center gap-2.5 text-xs" style={{ color: "hsl(0 0% 100% / 0.4)" }}>
-                  <Instagram className="w-3.5 h-3.5 shrink-0" /> @barbeariavilanova
+                  <Instagram className="w-3.5 h-3.5 shrink-0" /> barbeariavilanova
                 </div>
               </div>
             </div>
@@ -990,28 +992,12 @@ const VilaNova = () => {
                 ))}
               </div>
 
-              {user && (
-                <div className="p-3 rounded-xl" style={{ background: "hsl(140 60% 45% / 0.06)", border: "1px solid hsl(140 60% 45% / 0.12)" }}>
-                  <p className="text-xs font-medium" style={{ color: "hsl(140 60% 60%)" }}>
-                    ✅ Conta ativa! Acesse sua área de membro para gerenciar agendamentos.
-                  </p>
-                </div>
-              )}
-
               <div className="space-y-2.5 pt-1">
-                {user && (
-                  <motion.button onClick={() => { closeBooking(); window.location.href = "/vilanova/membro"; }}
-                    className="w-full py-3.5 rounded-xl font-bold text-sm"
-                    style={{ background: selBg, color: selColor }}
-                    whileTap={{ scale: 0.98 }}>
-                    Ir para Minha Conta
-                  </motion.button>
-                )}
                 <motion.button onClick={closeBooking}
-                  className="w-full py-3 rounded-xl font-medium text-sm transition-all"
-                  style={{ background: user ? "hsl(0 0% 100% / 0.05)" : selBg, color: user ? "hsl(0 0% 60%)" : selColor, border: user ? `1px solid hsl(0 0% 100% / 0.08)` : "none" }}
+                  className="w-full py-3.5 rounded-xl font-bold text-sm"
+                  style={{ background: selBg, color: selColor }}
                   whileTap={{ scale: 0.98 }}>
-                  {user ? "Voltar ao site" : "Entendido ✨"}
+                  Ok
                 </motion.button>
               </div>
             </motion.div>
