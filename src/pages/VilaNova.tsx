@@ -961,7 +961,7 @@ const VilaNova = () => {
             className="fixed inset-0 z-50 flex items-center justify-center p-4"
             style={{ background: "hsl(220 20% 4% / 0.92)", backdropFilter: "blur(12px)" }}>
             <motion.div initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ type: "spring" }}
-              className="w-full max-w-sm p-6 text-center space-y-5 rounded-2xl"
+              className="w-full max-w-sm p-7 text-center space-y-5 rounded-2xl"
               style={{ background: "hsl(0 0% 100% / 0.04)", backdropFilter: "blur(28px)", border: "1px solid hsl(0 0% 100% / 0.08)" }}>
               <motion.div initial={{ scale: 0 }} animate={{ scale: 1 }} transition={{ delay: 0.2, type: "spring" }}
                 className="w-20 h-20 rounded-full mx-auto flex items-center justify-center"
@@ -969,20 +969,53 @@ const VilaNova = () => {
                 <CheckCircle className="w-10 h-10" style={{ color: "hsl(140 60% 50%)" }} />
               </motion.div>
               <div>
-                <h3 className="text-xl font-bold">Agendamento Confirmado!</h3>
-                <p className="text-sm mt-2" style={{ color: "hsl(0 0% 55%)" }}>Confira no seu WhatsApp os detalhes.</p>
-                {!isLoggedIn && (
-                  <p className="text-xs mt-3 px-4 py-2 rounded-lg inline-block" style={{ background: "hsl(0 0% 100% / 0.04)", color: "hsl(0 0% 100% / 0.5)" }}>
-                    ✅ Sua conta foi criada com sucesso!
-                  </p>
-                )}
+                <h3 className="text-2xl font-black tracking-tight">Tudo Certo! 🎉</h3>
+                <p className="text-base font-semibold mt-2">Seu agendamento foi confirmado!</p>
+                <p className="text-sm mt-2" style={{ color: "hsl(0 0% 55%)" }}>
+                  Você receberá uma confirmação no seu WhatsApp com todos os detalhes.
+                </p>
               </div>
-              <motion.button onClick={closeBooking}
-                className="w-full py-3.5 rounded-xl font-bold text-sm"
-                style={{ background: selBg, color: selColor }}
-                whileTap={{ scale: 0.98 }}>
-                Entendido ✨
-              </motion.button>
+
+              {/* Appointment summary */}
+              <div className="p-4 rounded-xl space-y-2 text-left" style={{ background: "hsl(0 0% 100% / 0.03)", border: "1px solid hsl(0 0% 100% / 0.06)" }}>
+                {[
+                  { icon: "💈", text: selectedService?.title },
+                  { icon: "✂️", text: selectedBarber?.name },
+                  { icon: "📅", text: selectedDate ? new Date(selectedDate + "T12:00:00").toLocaleDateString("pt-BR", { weekday: "long", day: "2-digit", month: "long" }) : "" },
+                  { icon: "🕐", text: selectedTime ? `às ${selectedTime}` : "" },
+                  { icon: "💰", text: selectedService ? `R$ ${selectedService.price.toFixed(2)}` : "" },
+                ].filter(item => item.text).map((item, i) => (
+                  <div key={i} className="flex items-center gap-2.5 text-sm">
+                    <span>{item.icon}</span>
+                    <span style={{ color: "hsl(0 0% 80%)" }}>{item.text}</span>
+                  </div>
+                ))}
+              </div>
+
+              {user && (
+                <div className="p-3 rounded-xl" style={{ background: "hsl(140 60% 45% / 0.06)", border: "1px solid hsl(140 60% 45% / 0.12)" }}>
+                  <p className="text-xs font-medium" style={{ color: "hsl(140 60% 60%)" }}>
+                    ✅ Conta ativa! Acesse sua área de membro para gerenciar agendamentos.
+                  </p>
+                </div>
+              )}
+
+              <div className="space-y-2.5 pt-1">
+                {user && (
+                  <motion.button onClick={() => { closeBooking(); window.location.href = "/vilanova/membro"; }}
+                    className="w-full py-3.5 rounded-xl font-bold text-sm"
+                    style={{ background: selBg, color: selColor }}
+                    whileTap={{ scale: 0.98 }}>
+                    Ir para Minha Conta
+                  </motion.button>
+                )}
+                <motion.button onClick={closeBooking}
+                  className="w-full py-3 rounded-xl font-medium text-sm transition-all"
+                  style={{ background: user ? "hsl(0 0% 100% / 0.05)" : selBg, color: user ? "hsl(0 0% 60%)" : selColor, border: user ? `1px solid hsl(0 0% 100% / 0.08)` : "none" }}
+                  whileTap={{ scale: 0.98 }}>
+                  {user ? "Voltar ao site" : "Entendido ✨"}
+                </motion.button>
+              </div>
             </motion.div>
           </motion.div>
         )}
