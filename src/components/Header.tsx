@@ -194,9 +194,9 @@ const Header = ({ user, onSignOut, onCategorySelect, onDirections, onOpenWheel }
                         >
                           <div
                             className="w-8 h-8 rounded-lg flex items-center justify-center shrink-0"
-                            style={{ background: item.id === "roleta" ? 'hsl(280 55% 50% / 0.15)' : 'hsl(45 100% 50% / 0.1)' }}
+                            style={{ background: item.id === "roleta" ? 'hsl(280 55% 50% / 0.15)' : 'hsl(0 0% 100% / 0.08)' }}
                           >
-                            <item.icon className="w-4 h-4 text-accent" />
+                            <item.icon className="w-4 h-4 text-foreground/60" />
                           </div>
                           <span className="flex-1 text-left">{item.label}</span>
                           <ChevronRight className="w-3.5 h-3.5 text-muted-foreground/40" />
