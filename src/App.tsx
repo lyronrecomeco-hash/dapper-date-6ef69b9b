@@ -19,6 +19,7 @@ import ChatProConfig from "./pages/admin/ChatProConfig";
 import Navigation from "./pages/Navigation";
 import BaixarSource from "./pages/BaixarSource";
 import DemoSite from "./pages/DemoSite";
+import VilaNova from "./pages/VilaNova";
 
 const queryClient = new QueryClient();
 
