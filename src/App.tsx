@@ -14,6 +14,7 @@ import Appointments from "./pages/admin/Appointments";
 import Coupons from "./pages/admin/Coupons";
 import Settings from "./pages/admin/Settings";
 import StoreDashboard from "./pages/admin/StoreDashboard";
+import Finance from "./pages/admin/Finance";
 import PrizeWheelConfig from "./pages/admin/PrizeWheelConfig";
 import ChatProConfig from "./pages/admin/ChatProConfig";
 import Navigation from "./pages/Navigation";
